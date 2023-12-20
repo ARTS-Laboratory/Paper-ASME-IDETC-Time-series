@@ -1,0 +1,1 @@
+# Paper-ASME-IDETC-Time-series
