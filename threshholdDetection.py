@@ -26,20 +26,29 @@ def find_change_interval(data):
         return True
     else:
         return False
-    
+
+def exists_in(listIn, item):
+    for obj in listIn:
+        if obj == item:
+            return True
+    return False
 
 def main():
     file_path = r'C:\Users\localuser\Downloads\inputData1_raw.txt'  # Replace with the path to your data file
     times, data = read_data_from_file(file_path)
-    change_intervals = []
+    shock_intervals = []
+    shock_data = []
     for i in range(500):
         low = 0+(1000*i)
         high = 999*(i+1)
         if (find_change_interval(data[low : high])):
-            change_intervals.append(i)
-    for interval in change_intervals:
-        print(interval)
-            
-
+            shock_intervals.append(times[low : high])
+            shock_data.append(data[low: high])
+    shock_intervals_flat = np.concatenate(shock_intervals)
+    shock_data_flat = np.concatenate(shock_data)
+    fig, ax = plt.subplots()
+    ax.plot(times, data, color='black')
+    ax.scatter(shock_intervals_flat, shock_data_flat, color='blue')
+    
 if __name__ == "__main__":
     main()
