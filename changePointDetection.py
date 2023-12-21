@@ -1,5 +1,18 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Dec 21 11:00:52 2023
+
+@author: localuser
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
+
+num_samples = 500000
+interval_size = 1000
+file_path = r'C:\Users\localuser\Downloads\inputData1_raw.txt'
+stddev_shock = 10
+num_intervals = int(num_samples/interval_size)
 
 def read_data_from_file(file_path):
     times, data = [], []
@@ -11,21 +24,19 @@ def read_data_from_file(file_path):
     return times, data
 
 def find_change_interval(data):
-    if data[0] > data[1]:
-        minimum = data[1]
-        maximum = data[0]
-    else:
-        minimum = data[0]
-        maximum = data[1]
+    avg = 0
+    count = 0
     for datum in data:
-        if maximum < datum:
-            maximum = datum
-        if minimum > datum:
-            minimum = datum
-    if maximum - minimum > 40:
-        return True
-    else:
-        return False
+        avg += datum
+        count += 1
+    avg = avg / count
+    stddev = 0
+    for datum in data:
+        stddev += (datum - avg) * (datum - avg)
+    stddev = stddev / count
+    stddev = np.sqrt(stddev)
+    return stddev
+    
 
 def exists_in(listIn, item):
     for obj in listIn:
@@ -34,14 +45,13 @@ def exists_in(listIn, item):
     return False
 
 def main():
-    file_path = r'C:\Users\localuser\Downloads\inputData1_raw.txt'  # Replace with the path to your data file
     times, data = read_data_from_file(file_path)
     shock_intervals = []
     shock_data = []
-    for i in range(500):
-        low = 1000*i
-        high = 999*(i+1)
-        if (find_change_interval(data[low : high])):
+    for i in range(num_intervals):
+        low = interval_size*i
+        high = (interval_size-1)*(i+1) + i
+        if (find_change_interval(data[low : high])>stddev_shock):
             shock_intervals.append(times[low : high])
             shock_data.append(data[low: high])
     shock_intervals_flat = np.concatenate(shock_intervals)
