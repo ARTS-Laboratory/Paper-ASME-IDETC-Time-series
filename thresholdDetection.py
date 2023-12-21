@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Dec 21 12:32:16 2023
+
+@author: goshorna
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -27,31 +34,32 @@ def find_change_interval(data):
     else:
         return False
 
-def exists_in(listIn, item):
-    for obj in listIn:
-        if obj == item:
-            return True
-    return False
-
 def main():
     file_path = r'C:\Users\localuser\Downloads\inputData1_raw.txt'  # Replace with the path to your data file
     times, data = read_data_from_file(file_path)
     shock_intervals = []
-    shock_data = []
+    non_shock_intervals = []
     for i in range(500):
-        low = 1000*i
-        high = 999*(i+1)
-        if (find_change_interval(data[low : high])):
-            shock_intervals.append(times[low : high])
-            shock_data.append(data[low: high])
-    shock_intervals_flat = np.concatenate(shock_intervals)
-    shock_data_flat = np.concatenate(shock_data)
-    plt.plot(times, data, color='black')
-    plt.scatter(shock_intervals_flat, shock_data_flat, color='blue')
-    plt.xlabel('Time(s)')
-    plt.ylabel('Acceleration(m/s/s)')
-    plt.title('Forced Vibration And Shock(Blue=Shock prediction)')
+        low = 1000 * i
+        high = 999 * (i + 1) + i
+        if find_change_interval(data[low:high]):
+            shock_intervals.append((times[low], times[high - 1]))
+        else:
+            non_shock_intervals.append((times[low], times[high - 1]))
+
+    fig, ax = plt.subplots()
+    ax.plot(times, data, color='black')
+
+    for start, end in shock_intervals:
+        ax.axvspan(start, end, facecolor='green', alpha=0.3)
+
+    for start, end in non_shock_intervals:
+        ax.axvspan(start, end, facecolor='red', alpha=0.3)
+
+    ax.set_xlabel('Time(s)')
+    ax.set_ylabel('Acceleration(m/s/s)')
+    ax.set_title('Forced Vibration And Shock (Green=Shock, Red=Non-shock)')
     plt.show()
-    
+
 if __name__ == "__main__":
     main()
