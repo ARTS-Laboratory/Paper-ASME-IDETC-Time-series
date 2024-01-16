@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 num_samples = 500000
 interval_size = 2000
 file_path = r'C:\Users\localuser\Downloads\inputData1_raw.txt'
-stddev_shock = 10
+stddev_shock = 5
 num_intervals = int(num_samples / interval_size)
 
 def read_data_from_file(file_path):
@@ -31,15 +31,18 @@ def main():
     times, data = read_data_from_file(file_path)
     shock_intervals = []
     non_shock_intervals = []
+    deviation = []
     for i in range(num_intervals):
         low = interval_size*i
         high = (interval_size-1)*(i+1)+i
         interval_stddev = find_change_interval(data[low:high])
+        deviation.append(interval_stddev)
         if interval_stddev > stddev_shock:
             shock_intervals.append((times[low], times[high - 1]))
         else:
             non_shock_intervals.append((times[low], times[high - 1]))
     fig, ax = plt.subplots()
+    
     ax.plot(times, data, color='black')
     for start, end in shock_intervals:
         ax.axvspan(start, end, facecolor='green', alpha=0.3)
