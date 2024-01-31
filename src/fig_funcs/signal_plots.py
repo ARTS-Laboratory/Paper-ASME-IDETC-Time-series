@@ -1,8 +1,7 @@
-import scipy as sp
-from scipy.fft import fft, fftfreq, fftshift
+from scipy.fft import fft, fftfreq
 import matplotlib.pyplot as plt
 
-import metrics
+from utils import metrics
 
 
 def plot_signal(time, data):
