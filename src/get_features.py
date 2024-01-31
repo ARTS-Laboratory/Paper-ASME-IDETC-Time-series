@@ -1,14 +1,11 @@
 import numpy as np
 import scipy as sp
-import metrics
+from utils import metrics
 import matplotlib.pyplot as plt
-from src.fig_funcs import histograms, shaded_plots, signal_plots
-from sdt import changepoint
 
-
-def get_data(filename):
-    my_data = np.loadtxt(filename)
-    return my_data
+from offline_detection import binary_segmentation
+from src.fig_funcs import shaded_plots, signal_plots
+from utils.read_data import get_data
 
 
 def feature_cloud(data):
@@ -27,23 +24,24 @@ def slide_metrics(metric, data_vec, vec_length):
     return metric_vals
 
 
-def alt_main():
+def temp_ruptures():
     file_1 = '../data/dataset-A/inputData1_raw.txt'
-    vec_length = 500
+    # vec_length = 50
     my_data = get_data(file_1)
     time, data = my_data[:, 0], my_data[:, 1]
     time_step = metrics.sampling_frequency(data)
+    sig_fig = signal_plots.plot_signal(time, data)
+    fft_fig = signal_plots.plot_signal_fft(time, data)
+    # plt.show()
+    # exit()
+    # res = bottom_up.get_breaks(data, 3)
+    # bottom_up.plot_breaks(data, 3, res)
 
-    past, prob = vec_length, 0.5
-
-    change_detector = changepoint.BayesOnline()
-    change_points = change_detector.find_changepoints(data, past, prob)
-
-    axes = changepoint.plot_changepoints(data, change_points, time)
-    plt.show()
+    res = binary_segmentation.guess_breaks(data)
+    binary_segmentation.plot_breaks(data, res)
 
 
-def main():
+def get_show_features():
     file_1 = '../data/dataset-A/inputData1_raw.txt'
     vec_length = 500
     my_data = get_data(file_1)
@@ -52,6 +50,7 @@ def main():
     abs_val = metrics.abs_mean(data)
     # Let's look at the data
     sig_fig = signal_plots.plot_signal(time, data)
+
     fft_fig = signal_plots.plot_signal_fft(time, data)
     # plt.show()
     print(my_data.shape)
@@ -80,5 +79,3 @@ def main():
 
 if __name__ == '__main__':
     alt_main()
-    exit()
-    main()
