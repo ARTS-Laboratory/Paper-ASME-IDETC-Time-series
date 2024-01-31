@@ -4,4 +4,5 @@
 * matplotlib
 * numpy
 * scipy
+* ruptures
 * tomlkit
