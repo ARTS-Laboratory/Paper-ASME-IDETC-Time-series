@@ -1,0 +1,3 @@
+title = "Config 1"
+num_samples = 500000
+file_path = 'Path\to\file.txt'
