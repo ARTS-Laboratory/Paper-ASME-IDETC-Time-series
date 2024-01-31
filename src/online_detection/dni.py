@@ -9,8 +9,6 @@ import numpy as np
 from fig_funcs.detection_plots import plot_shock
 from utils.read_data import read_data_from_file
 
-file_path = r'C:\Users\localuser\Downloads\inputData1_raw.txt'
-
 
 def get_dni(
         times, data, num_samples, d_threshold, i_threshold,
@@ -37,7 +35,7 @@ def get_dni(
     return shocks, non_shocks
 
 
-def get_plot_dni():
+def get_plot_dni(file_path):
     times, data = read_data_from_file(file_path)
     num_samples = 500000  # Temporary magic number for data length
     d_threshold = 3  # Temporary magic number for parameter
