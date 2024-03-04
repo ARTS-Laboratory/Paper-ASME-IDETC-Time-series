@@ -75,7 +75,3 @@ def get_show_features():
     print(sp.stats.describe(data))
     obj = sp.stats.describe(abs_mean_slid)
     print(obj)
-
-
-if __name__ == '__main__':
-    alt_main()
