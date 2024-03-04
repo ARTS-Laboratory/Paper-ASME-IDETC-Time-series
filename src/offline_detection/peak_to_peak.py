@@ -69,4 +69,5 @@ def get_peak_to_peak(
 def get_plot_peak_to_peak(file_path):
     times, data = read_data_from_file(file_path)
     shock_intervals, non_shock_intervals = get_peak_to_peak(times, data)
-    plot_shock(times, data, shock_intervals, non_shock_intervals)
+    fig = plot_shock(times, data, shock_intervals, non_shock_intervals)
+    return shock_intervals, non_shock_intervals, fig

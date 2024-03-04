@@ -74,5 +74,5 @@ def get_plot_cusum(file_path):
     times, data = read_data_from_file(file_path)
     num_samples = 500000  # Temporary magic number for data length
     shock_intervals, non_shock_intervals = get_cusum_revised(times, data, num_samples)
-    plot_shock(times, data, shock_intervals, non_shock_intervals)
-    plt.show()
+    fig = plot_shock(times, data, shock_intervals, non_shock_intervals)
+    return shock_intervals, non_shock_intervals, fig

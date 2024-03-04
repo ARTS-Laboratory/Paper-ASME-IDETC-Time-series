@@ -249,5 +249,5 @@ def get_plot_expectation_maximization(file_path):
     print(len(my_data[:, 0]))
     shock_intervals, non_shock_intervals = get_expectation_max(time, data[:500], data[250_000:250_030],
                                                                data, epochs=5)
-    plot_shock(time, data, shock_intervals, non_shock_intervals)
-    plt.show()
+    fig = plot_shock(time, data, shock_intervals, non_shock_intervals)
+    return shock_intervals, non_shock_intervals, fig

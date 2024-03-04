@@ -61,4 +61,5 @@ def get_plot_std_dev(file_path):
     times, data = read_data_from_file(file_path)
     num_samples = 500000  # Temporary magic number for data length
     shock_intervals, non_shock_intervals, deviation = get_stdev_intervals_v2(times, data, num_samples)
-    plot_shock(times, data, shock_intervals, non_shock_intervals)
+    fig = plot_shock(times, data, shock_intervals, non_shock_intervals)
+    return shock_intervals, non_shock_intervals, fig

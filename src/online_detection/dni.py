@@ -42,4 +42,5 @@ def get_plot_dni(file_path):
     i_threshold = 15  # Temporary magic number for parameter
     shock_intervals, non_shock_intervals = get_dni(
         times, data, num_samples, d_threshold, i_threshold)
-    plot_shock(times, data, shock_intervals, non_shock_intervals)
+    fig = plot_shock(times, data, shock_intervals, non_shock_intervals)
+    return shock_intervals, non_shock_intervals, fig
