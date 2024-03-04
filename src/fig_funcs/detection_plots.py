@@ -10,7 +10,8 @@ def plot_shock(time, data, shock_intervals, non_shock_intervals):
     for start, end in non_shock_intervals:
         ax.axvspan(start, end, facecolor='red', alpha=0.3)
     ax.set_xlabel('Time(s)')
-    ax.set_ylabel('Acceleration(m/s/s)')
+    ax.set_ylabel('Acceleration(m/s\u00b2)')
     ax.set_title('Forced Vibration And Shock (Green=Shock, Red=Non-shock)')
+    plt.tight_layout()
     return fig, ax
 
