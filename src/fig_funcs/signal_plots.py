@@ -4,11 +4,18 @@ import matplotlib.pyplot as plt
 from utils import metrics
 
 
-def plot_signal(time, data):
+def plot_signal(time, data, ms=False):
     fig = plt.figure()
+    ylabel = 'acceleration (m/s\u00b2)'
+    if ms:
+        time *= 100
+        xlabel = 'time (\u03bcs)'
+    else:
+        xlabel = 'time (s)'
     plt.plot(time, data)
-    plt.xlabel('time (s)')
-    plt.ylabel('acceleration (m/s^2)')
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.tight_layout()
     return fig
 
 
