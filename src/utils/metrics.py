@@ -175,13 +175,12 @@ def trac_2d(ref_signals, predicted_signals):
 
 def rms(signal: ndarray) -> float:
     """ Return root mean square of signal."""
-    mean = np.mean(signal)
-    return np.sqrt(np.sum((signal - mean) ** 2))
+    return np.sqrt(np.mean(np.square(signal)))
 
 
 def rmse(actual: ndarray, predicted) -> float:
     """ Return root mean square error of vector."""
-    return np.sqrt(np.mean((actual - predicted) ** 2))
+    return np.sqrt(np.mean(np.square(actual - predicted)))
 
 
 def snr(ref_signal: ndarray, predicted_signal: ndarray) -> float:
