@@ -1,4 +1,32 @@
+import numpy as np
 from matplotlib import pyplot as plt
+
+
+def get_mean_array(time, data, shock_intervals, non_shock_intervals):
+    """ """
+    mean_levels = np.zeros_like(data) # time or data, shouldn't matter
+    for (start, stop) in shock_intervals:
+        mean_levels[start:stop] = np.mean(data[start:stop])
+    for (start, stop) in non_shock_intervals:
+        mean_levels[start:stop] = np.mean(data[start:stop])
+    return mean_levels
+
+
+def get_deviation_array(time, data, shock_intervals, non_shock_intervals):
+    """ """
+    dev_levels = np.zeros_like(data) # time or data, shouldn't matter
+    for (start, stop) in shock_intervals:
+        dev_levels[start:stop] = np.std(data[start:stop])
+    for (start, stop) in non_shock_intervals:
+        dev_levels[start:stop] = np.std(data[start:stop])
+    return dev_levels
+
+
+def get_std_ratio(time, data, shock_intervals, non_shock_intervals):
+    """ """
+    devs = get_deviation_array(time, data, shock_intervals, non_shock_intervals)
+    base_val = devs[0]
+    return devs / base_val
 
 
 def plot_shock(time, data, shock_intervals, non_shock_intervals):
