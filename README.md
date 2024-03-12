@@ -6,3 +6,4 @@
 * scipy
 * ruptures
 * tomlkit
+* tqdm
