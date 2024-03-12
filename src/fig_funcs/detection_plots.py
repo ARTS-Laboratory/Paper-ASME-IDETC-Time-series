@@ -43,3 +43,19 @@ def plot_shock(time, data, shock_intervals, non_shock_intervals):
     plt.tight_layout()
     return fig, ax
 
+
+def plot_shock_v2(time, data, shock_intervals, non_shock_intervals):
+    fig, ax = plt.subplots()
+
+    ax.plot(time, data, color='black')
+    for start, end in shock_intervals:
+        ax.axvspan(start, end, facecolor='blue', alpha=0.3)
+    for start, end in non_shock_intervals:
+        ax.axvspan(start, end, facecolor='orange', alpha=0.3)
+    ax.set_xlabel('time (s)')
+    ax.set_ylabel('acceleration (m/s\u00b2)')
+    ax.set_title('Forced Vibration And Shock')
+    plt.legend()
+    plt.tight_layout()
+    return fig, ax
+
