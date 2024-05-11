@@ -323,7 +323,8 @@ def get_expectation_max(
         pi_p = ab_size / (normal_size + ab_size)
     # Begin algorithm loop
     elapsed = 0
-    items = tqdm(enumerate(unknowns), total=len(unknowns)) if with_progress else enumerate(unknowns)
+    my_normal_obs, my_abnormal_obs, my_unknowns = np.asarray(normal_obs), np.asarray(abnormal_obs), np.asarray(unknowns)
+    items = tqdm(enumerate(my_unknowns), total=len(unknowns)) if with_progress else enumerate(my_unknowns)
     for idx, unknown in items:
         # start = perf_counter()
         attack, mean_1_p, mean_2_p, var_1_p, var_2_p, pi_p = expectation_maximization(
