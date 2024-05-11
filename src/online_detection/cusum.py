@@ -41,20 +41,30 @@ def cusum(time, data, mean, sigma, alpha, beta, shock_intervals=None, non_shock_
         cp.append(max(0, cp[idx - 1] + alpha_diff_var * (val - diff - alpha_diff_half)))
         cn.append(max(0, cn[idx - 1] - alpha_diff_var * (val + diff + alpha_diff_half)))
         # End of conversion
-        attack_likely = (np.abs(cn[idx]) > h or np.abs(cp[idx]) > h)
-        if cn[idx] > h or cp[idx] > h:
-            cp[idx] = 0
-            cn[idx] = 0
-        if attack_likely and not shock:
-            non_shocks.append((time[begin], time[idx - 1]))
+        # attack_likely = (np.abs(cn[idx]) > h or cp[idx] > h)
+
+        attack_likely = (cp[idx] > h or cn[idx] > h)
+        if attack_likely:
+            cp[idx], cn[idx] = 0, 0
+            if shock:
+                shocks.append((time[begin], time[idx]))
+            else:
+                non_shocks.append((time[begin], time[idx]))
             begin = idx
-            shock = True
-        elif not attack_likely and shock:
-            shocks.append((time[begin], time[idx - 1]))
-            begin = idx
-            shock = False
-    print(m_bar)
-    print(cp), print(cn)
+            shock = not shock
+        # if np.abs(cn[idx]) > h or cp[idx] > h:
+        #     cp[idx] = 0
+        #     cn[idx] = 0
+        # if attack_likely and not shock:
+        #     non_shocks.append((time[begin], time[idx - 1]))
+        #     begin = idx
+        #     shock = True
+        # elif not attack_likely and shock:
+        #     shocks.append((time[begin], time[idx - 1]))
+        #     begin = idx
+        #     shock = False
+    # print(m_bar)
+    # print(cp), print(cn)
     # Check if remaining segment is shock or not
     if shock:
         shocks.append((time[begin], time[-1]))
