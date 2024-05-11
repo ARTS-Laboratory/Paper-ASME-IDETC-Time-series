@@ -195,7 +195,8 @@ def posterior_prob(point, attack_prob, attack_mean, attack_var, normal_mean, nor
 #     #     [posterior_prob(point, attack_prob, attack_mean, attack_var, normal_mean, normal_var) for point in points])
 
 
-@jit(cache=True)
+# possibly remove caching to save time
+@jit
 def posterior_probs_v2(points, attack_prob, attack_mean, attack_var, normal_mean, normal_var):
     """ Calculate probabilities of each latent variable for each data point."""
     num_1 = phi_v2(points, attack_mean, attack_var) * attack_prob
