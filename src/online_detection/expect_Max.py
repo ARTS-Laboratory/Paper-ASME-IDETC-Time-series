@@ -30,11 +30,13 @@ def expectation_maximization(
          updated attack probability.
         :rtype: (bool, float, float, float, float, float)
         """
+    data = np.concatenate((safe, not_safe, (unknown,)))
     # This assumes these are python lists and not numpy arrays
-    if isinstance(safe, np.ndarray):
-        data = np.append(np.concatenate((safe, not_safe)), unknown)
-    else:
-        data = np.asarray(safe + not_safe + unknown)
+    # if isinstance(safe, np.ndarray):
+    #     data = np.append(np.concatenate((safe, not_safe)), unknown)
+    # else:
+    #     data = np.asarray(itertools.chain(safe, not_safe, (unknown,)))
+        # data = np.asarray(safe + not_safe + unknown)
     # todo this may need to loop till convergence
     # Variable initialization
     size = len(data)
@@ -42,7 +44,7 @@ def expectation_maximization(
     sig1_hat, sig2_hat = var_1, var_2
     pi_hat = pi
     # For some number of epochs, iterate over given data until convergence
-    # last_prob = np.inf
+    last_attack_prob = np.full_like(data, fill_value=-1e99)
     for idx in range(epochs):
         # Expectation
         # TODO confirm that the following 3 lines are equivalent
@@ -52,6 +54,9 @@ def expectation_maximization(
         # Maximization
         mu1_hat, mu2_hat, sig1_hat, sig2_hat, pi_hat = maximization(
             data, attack_prob, inverse, mu1_hat, mu2_hat, sig1_hat, sig2_hat, pi_hat, size)
+        if close_enough(attack_prob, last_attack_prob):
+            break
+        last_attack_prob[:] = attack_prob
         # density, inverse_density = np.sum(attack_prob), np.sum(inverse)
         # # If all probabilities are zero for attack or not attack, no need to update
         # if not (density == 0 or inverse_density == 0):
@@ -65,6 +70,56 @@ def expectation_maximization(
         #     pi_hat = new_pi_hat
     is_attack = posterior_prob(data[-1], pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat) > 0.01
     return is_attack, mu1_hat, mu2_hat, sig1_hat, sig2_hat, pi_hat
+
+
+def expectation_maximization_generator(
+        safe, not_safe, unknowns, mean_1, mean_2, var_1,
+        var_2, pi, epochs=1, converge_threshold=1e-3):
+    """ Perform expectation maximization on one unknown.
+
+        :param safe: Data that is known to be safe.
+        :param not_safe: Data that is not known to be safe.
+        :param unknown: Data that needs to be classified.
+        :param float mean_1: Estimated mean for safe data.
+        :param float mean_2: Estimated mean for unsafe data.
+        :param float var_1: Estimated variance for safe data.
+        :param float var_2: Estimated variance for unsafe data.
+        :param float pi: Estimated probability that an attack has occurred.
+        :param int epochs: Number of epochs to update parameters.
+        :returns: Tuple of (attack classification, updated mean 1,
+        updated mean 2, updated variance 1, updated variance 2,
+         updated attack probability.
+        :rtype: (bool, float, float, float, float, float)
+        """
+    data = np.concatenate((safe, not_safe, np.empty(1)))
+    # Variable initialization
+    size = len(data)
+    mu1_hat, mu2_hat = mean_1, mean_2
+    sig1_hat, sig2_hat = var_1, var_2
+    pi_hat = pi
+    for unknown in unknowns:
+        data[-1] = unknown  # reassign last value to our new unknown
+        # For some number of epochs, iterate over given data until convergence
+        last_attack_prob = np.full_like(data, fill_value=-1e99)
+        for idx in range(epochs):
+            # Expectation
+            # TODO confirm that the following 3 lines are equivalent
+            # attack_prob = posterior_probs(data, pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat)
+            # inverse = posterior_probs(data, 1 - pi_hat, mu1_hat, sig1_hat, mu2_hat, sig2_hat)
+            attack_prob, inverse = posterior_probs_v2(data, pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat)
+            # Maximization
+            mu1_hat, mu2_hat, sig1_hat, sig2_hat, pi_hat = maximization(
+                data, attack_prob, inverse, mu1_hat, mu2_hat, sig1_hat, sig2_hat, pi_hat, size)
+            if close_enough(attack_prob, last_attack_prob):
+                break
+            last_attack_prob[:] = attack_prob
+        is_attack = posterior_prob(data[-1], pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat) > 0.01
+        yield is_attack
+
+
+@jit(cache=True)
+def close_enough(a, b):
+    return np.allclose(a, b) and np.allclose(b, a)
 
 
 @jit
