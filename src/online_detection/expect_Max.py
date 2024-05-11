@@ -1,9 +1,7 @@
-
 import numpy as np
 
 from numba import jit
 from typing import List, Optional, Iterable
-from scipy.stats import norm
 from time import perf_counter
 from tqdm import tqdm
 
@@ -31,12 +29,6 @@ def expectation_maximization(
         :rtype: (bool, float, float, float, float, float)
         """
     data = np.concatenate((safe, not_safe, (unknown,)))
-    # This assumes these are python lists and not numpy arrays
-    # if isinstance(safe, np.ndarray):
-    #     data = np.append(np.concatenate((safe, not_safe)), unknown)
-    # else:
-    #     data = np.asarray(itertools.chain(safe, not_safe, (unknown,)))
-        # data = np.asarray(safe + not_safe + unknown)
     # todo this may need to loop till convergence
     # Variable initialization
     size = len(data)
@@ -57,29 +49,18 @@ def expectation_maximization(
         if close_enough(attack_prob, last_attack_prob):
             break
         last_attack_prob[:] = attack_prob
-        # density, inverse_density = np.sum(attack_prob), np.sum(inverse)
-        # # If all probabilities are zero for attack or not attack, no need to update
-        # if not (density == 0 or inverse_density == 0):
-        #     new_mu1_hat, new_mu2_hat = update_means(attack_prob, inverse, density, inverse_density, data)
-        #     new_sig1_hat, new_sig2_hat = update_variances(attack_prob, inverse, density, inverse_density, data, mu1_hat,
-        #                                                   mu2_hat)
-        #     new_pi_hat = update_attack_prob(density, size)
-        #     # Update variables
-        #     mu1_hat, mu2_hat = new_mu1_hat, new_mu2_hat
-        #     sig1_hat, sig2_hat = new_sig1_hat, new_sig2_hat
-        #     pi_hat = new_pi_hat
     is_attack = posterior_prob(data[-1], pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat) > 0.01
     return is_attack, mu1_hat, mu2_hat, sig1_hat, sig2_hat, pi_hat
 
 
 def expectation_maximization_generator(
         safe, not_safe, unknowns, mean_1, mean_2, var_1,
-        var_2, pi, epochs=1, converge_threshold=1e-3):
+        var_2, pi, epochs=1):
     """ Perform expectation maximization on one unknown.
 
         :param safe: Data that is known to be safe.
         :param not_safe: Data that is not known to be safe.
-        :param unknown: Data that needs to be classified.
+        :param unknowns: Collection of data that needs to be classified.
         :param float mean_1: Estimated mean for safe data.
         :param float mean_2: Estimated mean for unsafe data.
         :param float var_1: Estimated variance for safe data.
@@ -103,17 +84,17 @@ def expectation_maximization_generator(
         last_attack_prob = np.full_like(data, fill_value=-1e99)
         for idx in range(epochs):
             # Expectation
-            # TODO confirm that the following 3 lines are equivalent
-            # attack_prob = posterior_probs(data, pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat)
-            # inverse = posterior_probs(data, 1 - pi_hat, mu1_hat, sig1_hat, mu2_hat, sig2_hat)
-            attack_prob, inverse = posterior_probs_v2(data, pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat)
+            attack_prob, inverse = posterior_probs_v2(
+                data, pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat)
             # Maximization
             mu1_hat, mu2_hat, sig1_hat, sig2_hat, pi_hat = maximization(
-                data, attack_prob, inverse, mu1_hat, mu2_hat, sig1_hat, sig2_hat, pi_hat, size)
+                data, attack_prob, inverse, mu1_hat, mu2_hat,
+                sig1_hat, sig2_hat, pi_hat, size)
             if close_enough(attack_prob, last_attack_prob):
                 break
             last_attack_prob[:] = attack_prob
-        is_attack = posterior_prob(data[-1], pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat) > 0.01
+        is_attack = posterior_prob(
+            data[-1], pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat) > 0.01
         yield is_attack
 
 
@@ -139,19 +120,6 @@ def maximization(data, attack_prob, inverse, mu1_hat, mu2_hat, sig1_hat, sig2_ha
     return mu1_hat, mu2_hat, sig1_hat, sig2_hat, pi_hat
 
 
-# @jit
-# def phi(value, mean, variance):
-#     """ Return the probability density function for value.
-#
-#         :param float value: Value to get function for.
-#         :param float mean: Population mean.
-#         :param float variance: Population variance.
-#         :returns: PDF of value given.
-#         :rtype: float
-#     """
-#     return norm.pdf(value, loc=mean, scale=np.sqrt(variance))
-
-
 @jit(cache=True)
 def phi_v2(value, mean, variance):
     """ Return the probability density function for value.
@@ -168,12 +136,6 @@ def phi_v2(value, mean, variance):
     return ex/denom
 
 
-# def parameter_denom(point, attack_prob, attack_mean, attack_var, normal_mean, normal_var):
-#     """ """
-#     return ((attack_prob * phi(point, attack_mean, attack_var)) +
-#             ((1 - attack_prob) * phi(point, normal_mean, normal_var)))
-
-
 @jit
 def posterior_prob(point, attack_prob, attack_mean, attack_var, normal_mean, normal_var):
     """ Calculate probability of latent variable for given data point."""
@@ -185,46 +147,13 @@ def posterior_prob(point, attack_prob, attack_mean, attack_var, normal_mean, nor
     return post
 
 
-# def posterior_probs(points, attack_prob, attack_mean, attack_var, normal_mean, normal_var):
-#     """ Calculate probability of each latent variable for each data point."""
-#     # Probability of attack * Probability of point occurring if it was an attack
-#     # Divided by probability of point occurring
-#     return posterior_prob(
-#         np.asarray(points), attack_prob, attack_mean, attack_var, normal_mean, normal_var)
-#     # return np.asarray(
-#     #     [posterior_prob(point, attack_prob, attack_mean, attack_var, normal_mean, normal_var) for point in points])
-
-
-# possibly remove caching to save time
 @jit
 def posterior_probs_v2(points, attack_prob, attack_mean, attack_var, normal_mean, normal_var):
     """ Calculate probabilities of each latent variable for each data point."""
     num_1 = phi_v2(points, attack_mean, attack_var) * attack_prob
     num_2 = phi_v2(points, normal_mean, normal_var) * (1 - attack_prob)
-    # denom = num_1 + num_2
-    # return num_1/denom, num_2/denom
     denom = 1 / (num_1 + num_2)
     return num_1 * denom, num_2 * denom
-
-
-# def mean_var_1_denom(probs):
-#     """ Return sum of anti-probs."""
-#     return sum(map(lambda x: 1 - x, probs))
-
-
-# def mean_var_2_denom(probs):
-#     """ Return sum of probs."""
-#     return sum(probs)
-
-
-# @jit
-# def dot_prod(x, y):
-#     """ Return the dot product of the given vectors.
-#
-#         :param Iterable x:
-#         :param Iterable y:
-#         """
-#     return np.dot(x, y)  # sum(map(operator.mul, x, y))
 
 
 @jit
@@ -240,12 +169,10 @@ def update_means(probs, inverse, density, inverse_density, events):
         :param events: List of events corresponding to probs.
         :rtype: (float, float)
         :returns: tuple of updated means (mean 1, mean 2)"""
-    # todo fix these iterables
     mean_1_denom = inverse_density
     mean_2_denom = density
-
-    mean_1_num = np.dot(inverse, events)  # dot_prod(inverse, events)
-    mean_2_num = np.dot(probs, events)  # dot_prod(probs, events)
+    mean_1_num = np.dot(inverse, events)
+    mean_2_num = np.dot(probs, events)
     mean_1 = mean_1_num / mean_1_denom
     mean_2 = mean_2_num / mean_2_denom
     return mean_1, mean_2
@@ -254,7 +181,6 @@ def update_means(probs, inverse, density, inverse_density, events):
 @jit
 def variance_helper(probs, events, mean):
     """ """
-    # return dot_prod(probs, np.asarray(np.square(events - mean)))
     return np.dot(probs, np.asarray(np.square(events - mean)))
 
 
@@ -275,12 +201,6 @@ def update_variances(probs, inverse, density, inverse_density, events, mean_1, m
         :returns: Tuple of mean for safe data and mean for unsafe data.
         :rtype: (float, float)
     """
-    # var_1_num = variance_helper(inverse, events, mean_1)
-    # var_2_num = variance_helper(probs, events, mean_2)
-    # var_1_denom = inverse_density  # Reassignment for clarity
-    # var_2_denom = density  # Reassignment for clarity
-    # var_1 = var_1_num / var_1_denom
-    # var_2 = var_2_num / var_2_denom
     var_1 = variance_helper(inverse, events, mean_1) / inverse_density
     var_2 = variance_helper(probs, events, mean_2) / density
     return var_1, var_2
