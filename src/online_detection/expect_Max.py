@@ -337,5 +337,4 @@ def get_plot_expectation_maximization(file_path, with_progress=False):
         time, safe, unsafe, data, mean_1=mean_1, var_1=var_1,
         epochs=50, with_progress=with_progress)
     fig = plot_shock(time, data, shock_intervals, non_shock_intervals)
-    print(f'{shock_intervals == shock_intervals_gen} and {non_shock_intervals == non_shock_intervals_gen}')
     return shock_intervals, non_shock_intervals, fig

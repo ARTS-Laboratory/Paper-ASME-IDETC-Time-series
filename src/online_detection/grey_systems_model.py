@@ -240,7 +240,6 @@ def get_plot_grey_model(file_path, with_progress=False):
         time, data, window_size=1000, c=3.0, c_ratio=0.5,
         with_progress=with_progress)
     fig = plot_shock(time, data, shock_intervals, non_shock_intervals)
-    print(f'{shock_intervals == shock_intervals_gen} and {non_shock_intervals == non_shock_intervals_gen}')
     # return None, None, None
     return shock_intervals, non_shock_intervals, fig
 
