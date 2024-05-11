@@ -129,26 +129,27 @@ def maximization(data, attack_prob, inverse, mu1_hat, mu2_hat, sig1_hat, sig2_ha
     density, inverse_density = np.sum(attack_prob), np.sum(inverse)
     # If all probabilities are zero for attack or not attack, no need to update
     if not (density == 0 or inverse_density == 0):
-        # todo add try except blocks here for error
-        new_mu1_hat, new_mu2_hat = update_means(attack_prob, inverse, density, inverse_density, data)
-        new_sig1_hat, new_sig2_hat = update_variances(attack_prob, inverse, density, inverse_density, data, mu1_hat,
-                                                      mu2_hat)
+        new_mu1_hat, new_mu2_hat = update_means(
+            attack_prob, inverse, density, inverse_density, data)
+        new_sig1_hat, new_sig2_hat = update_variances(
+            attack_prob, inverse, density, inverse_density, data, mu1_hat,
+            mu2_hat)
         new_pi_hat = update_attack_prob(density, size)
         return new_mu1_hat, new_mu2_hat, new_sig1_hat, new_sig2_hat, new_pi_hat
     return mu1_hat, mu2_hat, sig1_hat, sig2_hat, pi_hat
 
 
-@jit
-def phi(value, mean, variance):
-    """ Return the probability density function for value.
-
-        :param float value: Value to get function for.
-        :param float mean: Population mean.
-        :param float variance: Population variance.
-        :returns: PDF of value given.
-        :rtype: float
-    """
-    return norm.pdf(value, loc=mean, scale=np.sqrt(variance))
+# @jit
+# def phi(value, mean, variance):
+#     """ Return the probability density function for value.
+#
+#         :param float value: Value to get function for.
+#         :param float mean: Population mean.
+#         :param float variance: Population variance.
+#         :returns: PDF of value given.
+#         :rtype: float
+#     """
+#     return norm.pdf(value, loc=mean, scale=np.sqrt(variance))
 
 
 @jit(cache=True)
@@ -167,12 +168,13 @@ def phi_v2(value, mean, variance):
     return ex/denom
 
 
-def parameter_denom(point, attack_prob, attack_mean, attack_var, normal_mean, normal_var):
-    """ """
-    return ((attack_prob * phi(point, attack_mean, attack_var)) +
-            ((1 - attack_prob) * phi(point, normal_mean, normal_var)))
+# def parameter_denom(point, attack_prob, attack_mean, attack_var, normal_mean, normal_var):
+#     """ """
+#     return ((attack_prob * phi(point, attack_mean, attack_var)) +
+#             ((1 - attack_prob) * phi(point, normal_mean, normal_var)))
 
 
+@jit
 def posterior_prob(point, attack_prob, attack_mean, attack_var, normal_mean, normal_var):
     """ Calculate probability of latent variable for given data point."""
     # Probability of attack * Probability of point occurring if it was an attack
@@ -183,14 +185,14 @@ def posterior_prob(point, attack_prob, attack_mean, attack_var, normal_mean, nor
     return post
 
 
-def posterior_probs(points, attack_prob, attack_mean, attack_var, normal_mean, normal_var):
-    """ Calculate probability of each latent variable for each data point."""
-    # Probability of attack * Probability of point occurring if it was an attack
-    # Divided by probability of point occurring
-    return posterior_prob(
-        np.asarray(points), attack_prob, attack_mean, attack_var, normal_mean, normal_var)
-    # return np.asarray(
-    #     [posterior_prob(point, attack_prob, attack_mean, attack_var, normal_mean, normal_var) for point in points])
+# def posterior_probs(points, attack_prob, attack_mean, attack_var, normal_mean, normal_var):
+#     """ Calculate probability of each latent variable for each data point."""
+#     # Probability of attack * Probability of point occurring if it was an attack
+#     # Divided by probability of point occurring
+#     return posterior_prob(
+#         np.asarray(points), attack_prob, attack_mean, attack_var, normal_mean, normal_var)
+#     # return np.asarray(
+#     #     [posterior_prob(point, attack_prob, attack_mean, attack_var, normal_mean, normal_var) for point in points])
 
 
 @jit(cache=True)
@@ -198,28 +200,30 @@ def posterior_probs_v2(points, attack_prob, attack_mean, attack_var, normal_mean
     """ Calculate probabilities of each latent variable for each data point."""
     num_1 = phi_v2(points, attack_mean, attack_var) * attack_prob
     num_2 = phi_v2(points, normal_mean, normal_var) * (1 - attack_prob)
-    denom = num_1 + num_2
-    return num_1/denom, num_2/denom
+    # denom = num_1 + num_2
+    # return num_1/denom, num_2/denom
+    denom = 1 / (num_1 + num_2)
+    return num_1 * denom, num_2 * denom
 
 
-def mean_var_1_denom(probs):
-    """ Return sum of anti-probs."""
-    return sum(map(lambda x: 1 - x, probs))
+# def mean_var_1_denom(probs):
+#     """ Return sum of anti-probs."""
+#     return sum(map(lambda x: 1 - x, probs))
 
 
-def mean_var_2_denom(probs):
-    """ Return sum of probs."""
-    return sum(probs)
+# def mean_var_2_denom(probs):
+#     """ Return sum of probs."""
+#     return sum(probs)
 
 
-@jit
-def dot_prod(x, y):
-    """ Return the dot product of the given vectors.
-
-        :param Iterable x:
-        :param Iterable y:
-        """
-    return np.dot(x, y)  # sum(map(operator.mul, x, y))
+# @jit
+# def dot_prod(x, y):
+#     """ Return the dot product of the given vectors.
+#
+#         :param Iterable x:
+#         :param Iterable y:
+#         """
+#     return np.dot(x, y)  # sum(map(operator.mul, x, y))
 
 
 @jit
@@ -322,7 +326,7 @@ def get_expectation_max(
     for idx, unknown in items:
         # start = perf_counter()
         attack, mean_1_p, mean_2_p, var_1_p, var_2_p, pi_p = expectation_maximization(
-            normal_obs, abnormal_obs, np.asarray(unknown), mean_1_p, mean_2_p, var_1_p,
+            normal_obs, abnormal_obs, unknown, mean_1_p, mean_2_p, var_1_p,
             var_2_p, pi_p, epochs=epochs)
         # stop = perf_counter()
         # elapsed += stop - start
