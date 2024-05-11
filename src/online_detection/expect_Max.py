@@ -53,6 +53,7 @@ def expectation_maximization(
     return is_attack, mu1_hat, mu2_hat, sig1_hat, sig2_hat, pi_hat
 
 
+@jit
 def expectation_maximization_generator(
         safe, not_safe, unknowns, mean_1, mean_2, var_1,
         var_2, pi, epochs=1):
@@ -271,6 +272,48 @@ def get_expectation_max(
     return shocks, non_shocks
 
 
+def get_expectation_maximization_model_from_generator(
+        time, normal_obs, abnormal_obs, unknowns, mean_1=None, mean_2=None,
+        var_1=None, var_2=None, pi=None, shock_intervals=None,
+        non_shock_intervals=None, epochs=1, with_progress=False):
+    # Instantiating variables
+    shocks = [] if shock_intervals is None else shock_intervals
+    non_shocks = [] if non_shock_intervals is None else non_shock_intervals
+    begin = 0
+    shock = False
+    # get params theta = mu , mu2, sig, sig2, pi
+    mean_1_p = mean_1 if mean_1 is not None else np.mean(normal_obs)
+    mean_2_p = mean_2 if mean_2 is not None else np.mean(abnormal_obs)
+    var_1_p = var_1 if var_1 is not None else np.var(normal_obs)
+    var_2_p = var_2 if var_2 is not None else np.var(abnormal_obs)
+    if pi is not None:
+        pi_p = pi
+    else:
+        normal_size, ab_size = len(normal_obs), len(abnormal_obs)
+        pi_p = ab_size / (normal_size + ab_size)
+    # Begin algorithm loop
+    my_normal_obs, my_abnormal_obs, my_unknowns = np.asarray(normal_obs), np.asarray(abnormal_obs), np.asarray(unknowns)
+    em_model_gen = expectation_maximization_generator(
+        my_normal_obs, my_abnormal_obs, my_unknowns, mean_1_p, mean_2_p,
+        var_1_p, var_2_p, pi_p, epochs)
+    items = tqdm(enumerate(em_model_gen), total=len(unknowns)) if with_progress else enumerate(em_model_gen)
+    for idx, is_attack in items:
+        if is_attack and not shock:  # If detected attack and not in shock state, change state
+            non_shocks.append((time[begin], time[idx]))
+            shock = True
+            begin = idx
+        elif not is_attack and shock:
+            shocks.append((time[begin], time[idx]))
+            shock = False
+            begin = idx
+    # Check if remaining segment is shock or not
+    if shock:
+        shocks.append((time[begin], time[-1]))
+    else:
+        non_shocks.append((time[begin], time[-1]))
+    return shocks, non_shocks
+
+
 def get_plot_expectation_maximization(file_path, with_progress=False):
     my_data = get_data(file_path)
     time, data = my_data[:, 0], my_data[:, 1]
@@ -286,8 +329,13 @@ def get_plot_expectation_maximization(file_path, with_progress=False):
     # shock_intervals, non_shock_intervals = get_expectation_max(
     #     time, data[:7], data[7:10], data, mean_1=mean_1, var_1=var_1,
     #     mean_2=mean_2, var_2=var_2, epochs=50, with_progress=with_progress)
+    shock_intervals_gen, non_shock_intervals_gen = get_expectation_maximization_model_from_generator(
+        time, safe, unsafe, data, mean_1=mean_1, var_1=var_1,
+        epochs=50, with_progress=with_progress)
+    fig_gen = plot_shock(time, data, shock_intervals_gen, non_shock_intervals_gen)
     shock_intervals, non_shock_intervals = get_expectation_max(
         time, safe, unsafe, data, mean_1=mean_1, var_1=var_1,
         epochs=50, with_progress=with_progress)
     fig = plot_shock(time, data, shock_intervals, non_shock_intervals)
+    print(f'{shock_intervals == shock_intervals_gen} and {non_shock_intervals == non_shock_intervals_gen}')
     return shock_intervals, non_shock_intervals, fig
