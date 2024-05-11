@@ -355,7 +355,19 @@ def get_plot_expectation_maximization(file_path, with_progress=False):
     my_data = get_data(file_path)
     time, data = my_data[:, 0], my_data[:, 1]
     print(len(my_data[:, 0]))
-    shock_intervals, non_shock_intervals = get_expectation_max(time, data[:500], data[250_000:250_030],
-                                                               data, epochs=5, with_progress=with_progress)
+    mean_1 = np.mean(data[:100_000])
+    var_1 = np.var(data[:100_000])
+    mean_2 = np.mean(data[200_000:400_000])
+    var_2 = np.var(data[200_000:400_000])
+    safe = np.random.normal(mean_1, var_1, 64)
+    unsafe = np.random.normal(mean_2, var_2, 64)
+    print(f'Means: {mean_1}, {mean_2}')
+    print(f'Variances: {var_1}, {var_2}')
+    # shock_intervals, non_shock_intervals = get_expectation_max(
+    #     time, data[:7], data[7:10], data, mean_1=mean_1, var_1=var_1,
+    #     mean_2=mean_2, var_2=var_2, epochs=50, with_progress=with_progress)
+    shock_intervals, non_shock_intervals = get_expectation_max(
+        time, safe, unsafe, data, mean_1=mean_1, var_1=var_1,
+        epochs=50, with_progress=with_progress)
     fig = plot_shock(time, data, shock_intervals, non_shock_intervals)
     return shock_intervals, non_shock_intervals, fig
