@@ -223,11 +223,10 @@ def old_get_cusum(times, data, num_samples, shock_intervals=None, non_shock_inte
 
 def get_plot_cusum(file_path):
     times, data = read_data_from_file(file_path)
-    num_samples = 500000  # Temporary magic number for data length
-    shock_intervals, non_shock_intervals = get_cusum_revised(times, data, num_samples)
+    # shock_intervals, non_shock_intervals = get_cusum_revised(times, data, num_samples)
     mean, std = np.mean(data[:1_000]), np.std(data[:1_000])
     # shock_intervals, non_shock_intervals = simple_cusum(times, data, mean, std)
-    # shock_intervals, non_shock_intervals = cusum(times, data, mean, std, alpha=0.025, beta=0.025)  # , alpha=0.025, beta=0.025
-    # shock_intervals, non_shock_intervals = cusum_alg(times, data, mean, std, h=5, alpha=0.5)
+    shock_intervals, non_shock_intervals = cusum(times, data, mean, std, alpha=0.025, beta=0.025)  # , alpha=0.025, beta=0.025
+    # shock_intervals, non_shock_intervals = cusum_alg(times, data, mean, std, h=5, alpha=0.25)
     fig = plot_shock(times, data, shock_intervals, non_shock_intervals)
     return shock_intervals, non_shock_intervals, fig
