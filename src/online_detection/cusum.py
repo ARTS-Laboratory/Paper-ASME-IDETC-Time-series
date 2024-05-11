@@ -5,7 +5,6 @@ Created on Thu Dec 21 12:24:29 2023
 @author: localuser
 """
 import numpy as np
-import matplotlib.pyplot as plt
 
 from fig_funcs.detection_plots import plot_shock
 from utils.read_data import read_data_from_file
@@ -18,7 +17,7 @@ def cusum(time, data, mean, sigma, alpha, beta, shock_intervals=None, non_shock_
     non_shocks = [] if non_shock_intervals is None else non_shock_intervals
     shock = False
     begin = 0
-    next_data = list()
+    # next_data = list()
     m_bar = [mean]
     h = 5 * sigma
     cp, cn = [0], [0]
