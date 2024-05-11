@@ -335,11 +335,11 @@ def get_expectation_max(
         #     print(f'Function took {elapsed / 10_000} sec to run on average over last 10,000 loops, {elapsed} sec total.')
         #     elapsed = 0
         if attack and not shock:  # If detected attack and not in shock state, change state
-            non_shocks.append((time[begin], time[idx - 1]))
+            non_shocks.append((time[begin], time[idx]))
             shock = True
             begin = idx
         elif not attack and shock:
-            shocks.append((time[begin], time[idx - 1]))
+            shocks.append((time[begin], time[idx]))
             shock = False
             begin = idx
     # Check if remaining segment is shock or not
