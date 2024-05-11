@@ -23,15 +23,20 @@ def cusum(time, data, mean, sigma, alpha, beta, shock_intervals=None, non_shock_
     h = 5 * sigma
     cp, cn = [0], [0]
     var = sigma**2
+    accumulator = data[0]
     for idx, val in enumerate(data[1:], start=1):
-        m_bar.append(beta*m_bar[idx - 1] + (1 - beta) * data[idx])
+        accumulator += val
+        # m_bar.append(beta*m_bar[idx - 1] + (1 - beta) * data[idx])
+        m_bar.append(beta * m_bar[idx - 1] - (1 - beta) * val)
         m_bar[0], m_bar[1] = mean, mean
-        next_data.append(abs(data[idx] - data[idx - 1]) - m_bar[idx - 1])
+        mean_p = accumulator / (idx + 1)
+        # next_data.append(abs(data[idx] - data[idx - 1]) - m_bar[idx - 1])
         # These are the original lines
         # cp.append(max(0, cp[idx - 1] + (alpha*(m_bar[idx] - mean)/sigma**2)*(data[idx]-(m_bar[idx]-mean)-alpha*(m_bar[idx]-mean)*0.5)))
         # cn.append(max(0, cn[idx - 1] - (alpha*(m_bar[idx] - mean)/sigma**2)*(data[idx]+(m_bar[idx]-mean)+alpha*(m_bar[idx]-mean)*0.5)))
         # The following  5 lines should be equivalent to the 2 above
-        diff = m_bar[idx] - mean
+        # diff = m_bar[idx - 1] - mean
+        diff = m_bar[idx - 1] - mean_p
         alpha_diff = alpha * diff
         alpha_diff_var, alpha_diff_half = alpha_diff / var, alpha_diff * 0.5
         cp.append(max(0, cp[idx - 1] + alpha_diff_var * (val - diff - alpha_diff_half)))
