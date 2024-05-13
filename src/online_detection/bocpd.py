@@ -489,77 +489,77 @@ def get_bocpd(
     return shocks, non_shocks
 
 
-def get_bocpd_2(time, data, mu, kappa, alpha, beta, lamb,
-                shock_intervals=None, non_shock_intervals=None, with_progress=False):
-    """ """
-    shocks = [] if shock_intervals is None else shock_intervals
-    non_shocks = [] if non_shock_intervals is None else non_shock_intervals
-    begin = 0
-    shock = False
-    cps, cps_2 = 0, 0
-    my_data = np.abs(np.asarray(data))
-    run_length = 1  # Iterations since last changepoint
-    # max_val, max_idx = None, None
-    max_val = 0  # -1e99 Assume the max value currently is the head
-    head, tail = 1, 0
-    accumulator = 0
-    attack = False
-    for idx, event in enumerate(tqdm(my_data)):
-        # print(f'Accumulator: {accumulator}')
-        prior = calculate_prior(event, alpha, beta, mu, kappa)
-        hazard = hazard_function(lamb)
-        non_cp = [head * prior * (1 - hazard), tail * prior * (1 - hazard)]
-        cp = (head * prior * hazard) + (tail * prior * hazard)
-        head, tail = cp, sum(non_cp)
-        total = head + tail
-        max_val = max_val * prior * (1 - hazard)
-        if total != 0:
-            head, tail = head / total, tail / total
-            max_val = max_val / total
-        # new_probs = calculate_probabilities(
-        #     idx, event, alpha, beta, mu, kappa, probabilities, lamb)
-        # probabilities = new_probs
-        # print(f'Prior: {prior}')
-        # print(f'head: {cp} tail: {tail}')
-        # print(f'head: {cp} max value: {max(cp, max_val)}')
-        # print(max_val)
-        if cp > max_val:  # event is an attack
-            # max_idx = 0
-            max_val = cp
-            run_length, accumulator = update_attack_v4(event)
-            cps += 1
-            attack = True
-        else:
-            # update
-            run_length, accumulator, mu, kappa, alpha, beta = update_no_attack_v4(
-                my_data, idx, run_length, cp, accumulator, mu, kappa, alpha, beta)
-            # print(f'Alpha: {alpha} Beta: {beta} Kappa: {kappa} Mu: {mu}')
-        attack_prob = calculate_prior(event, alpha, beta, mu, kappa) < 0.1
-        if attack_prob:
-            cps_2 += 1
-        if attack:
-            if shock:
-                shocks.append((time[begin], time[idx - 1]))
-            else:
-                non_shocks.append((time[begin], time[idx - 1]))
-            begin = idx
-            shock = not shock
-            attack = False
-        # if attack and not shock:  # If detected attack and not in shock state, change state
-        #     cps_2 += 1
-        #     non_shocks.append((time[begin], time[idx - 1]))
-        #     shock = True
-        #     begin = idx
-        # elif not attack and shock:
-        #     shocks.append((time[begin], time[idx - 1]))
-        #     shock = False
-        #     begin = idx
-    print(f'Total changepoints: {cps} vs {cps_2}')
-    if shock:
-        shocks.append((time[begin], time[-1]))
-    else:
-        non_shocks.append((time[begin], time[-1]))
-    return shocks, non_shocks
+# def get_bocpd_2(time, data, mu, kappa, alpha, beta, lamb,
+#                 shock_intervals=None, non_shock_intervals=None, with_progress=False):
+#     """ """
+#     shocks = [] if shock_intervals is None else shock_intervals
+#     non_shocks = [] if non_shock_intervals is None else non_shock_intervals
+#     begin = 0
+#     shock = False
+#     cps, cps_2 = 0, 0
+#     my_data = np.abs(np.asarray(data))
+#     run_length = 1  # Iterations since last changepoint
+#     # max_val, max_idx = None, None
+#     max_val = 0  # -1e99 Assume the max value currently is the head
+#     head, tail = 1, 0
+#     accumulator = 0
+#     attack = False
+#     for idx, event in enumerate(tqdm(my_data)):
+#         # print(f'Accumulator: {accumulator}')
+#         prior = calculate_prior(event, alpha, beta, mu, kappa)
+#         hazard = hazard_function(lamb)
+#         non_cp = [head * prior * (1 - hazard), tail * prior * (1 - hazard)]
+#         cp = (head * prior * hazard) + (tail * prior * hazard)
+#         head, tail = cp, sum(non_cp)
+#         total = head + tail
+#         max_val = max_val * prior * (1 - hazard)
+#         if total != 0:
+#             head, tail = head / total, tail / total
+#             max_val = max_val / total
+#         # new_probs = calculate_probabilities(
+#         #     idx, event, alpha, beta, mu, kappa, probabilities, lamb)
+#         # probabilities = new_probs
+#         # print(f'Prior: {prior}')
+#         # print(f'head: {cp} tail: {tail}')
+#         # print(f'head: {cp} max value: {max(cp, max_val)}')
+#         # print(max_val)
+#         if cp > max_val:  # event is an attack
+#             # max_idx = 0
+#             max_val = cp
+#             run_length, accumulator = update_attack_v4(event)
+#             cps += 1
+#             attack = True
+#         else:
+#             # update
+#             run_length, accumulator, mu, kappa, alpha, beta = update_no_attack_v4(
+#                 my_data, idx, run_length, cp, accumulator, mu, kappa, alpha, beta)
+#             # print(f'Alpha: {alpha} Beta: {beta} Kappa: {kappa} Mu: {mu}')
+#         attack_prob = calculate_prior(event, alpha, beta, mu, kappa) < 0.1
+#         if attack_prob:
+#             cps_2 += 1
+#         if attack:
+#             if shock:
+#                 shocks.append((time[begin], time[idx - 1]))
+#             else:
+#                 non_shocks.append((time[begin], time[idx - 1]))
+#             begin = idx
+#             shock = not shock
+#             attack = False
+#         # if attack and not shock:  # If detected attack and not in shock state, change state
+#         #     cps_2 += 1
+#         #     non_shocks.append((time[begin], time[idx - 1]))
+#         #     shock = True
+#         #     begin = idx
+#         # elif not attack and shock:
+#         #     shocks.append((time[begin], time[idx - 1]))
+#         #     shock = False
+#         #     begin = idx
+#     print(f'Total changepoints: {cps} vs {cps_2}')
+#     if shock:
+#         shocks.append((time[begin], time[-1]))
+#     else:
+#         non_shocks.append((time[begin], time[-1]))
+#     return shocks, non_shocks
 
 
 def get_bocpd_windowed(time, data, mu, kappa, alpha, beta, lamb,
