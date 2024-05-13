@@ -86,31 +86,6 @@ def bayesian_online_changepoint_detection_v2(data, mu, kappa, alpha, beta, lamb)
     return attacks
 
 
-# def bayesian_online_changepoint_detection_v3(data, mu, kappa, alpha, beta, lamb):
-#     """ Memory inefficient method."""
-#     my_data = np.asarray(data)
-#     probabilities = np.empty_like(my_data)
-#     ref_p_1, ref_p_2 = 0, 0
-#     run_length = 1  # Iterations since last changepoint
-#     maxes = list()
-#     attacks = list()
-#     for idx, event in enumerate(my_data):
-#         calculate_probabilities_inplace(
-#             idx, event, alpha, beta, mu, kappa, probabilities, lamb)
-#         max_idx = find_max_cp(probabilities)
-#         maxes.append(max_idx)
-#         if maxes[idx] < maxes[idx - 1]:
-#             # event is an attack
-#             run_length, ref_p_1 = update_attack(idx)
-#         else:
-#             # update
-#             # cp = probabilities[0]
-#             run_length, ref_p_2, mu, kappa, alpha, beta = update_no_attack(
-#                 my_data, idx, run_length, probabilities[0], ref_p_1, ref_p_2, mu, kappa, alpha, beta)
-#         attacks.append(calculate_prior(event, alpha, beta, mu, kappa) < 0.1)
-#     return attacks
-
-
 def bayesian_online_changepoint_detection_v4(data, mu, kappa, alpha, beta, lamb):
     """ """
     my_data = np.asarray(data)
@@ -163,25 +138,10 @@ def calculate_probabilities(idx, event, alpha, beta, mu, kappa, probabilities, l
     """ """
     threshold = 1e-16
     prior = calculate_prior(event, alpha, beta, mu, kappa)
-    # hazard = hazard_function(lamb)
-    # new_probabilities = calculate_normalize_probs_helper(
-    #     np.asarray(probabilities[0:idx]), prior, hazard)
-
-    # probs = np.asarray(probabilities[0:idx])
     new_probabilities = np.empty(len(probabilities) + 1)
     calculate_probs_helper(
         probabilities, prior, hazard_function(lamb),
         new_probabilities)
-    # new_probabilities = calculate_probs_helper_2(probs, prior, hazard)
-
-    # new_probabilities = calculate_probs_helper_2(
-    #     np.asarray(probabilities), prior, hazard_function(lamb))
-
-    # non_cp = calculate_non_cp(probabilities[0:idx], prior, hazard)
-    # cp = calculate_cp(probabilities[0:idx], prior, hazard)
-    # new_probabilities = np.asarray([cp, non_cp])
-
-    # new_probabilities = normalize_probs(new_probabilities)
     threshold_filter = new_probabilities > threshold
     threshold_filter[0] = True
     new_probabilities = new_probabilities[threshold_filter]
@@ -192,8 +152,6 @@ def calculate_probabilities(idx, event, alpha, beta, mu, kappa, probabilities, l
 @jit
 def calculate_probs_helper(probs, prior, hazard, arr):
     """ Calculate the new probabilities in-place"""
-    # arr[1:] = probs * (prior * (1 - hazard))
-    # arr[0] = np.sum(probs) * prior * hazard  # np.sum(probs * prior * hazard)
     arr[0] = np.sum(probs) * hazard
     arr[1:] = probs * (1 - hazard)
     arr *= prior
@@ -218,26 +176,11 @@ def calculate_normalize_probs_helper(probs, prior, hazard):
     if total != 0:
         return arr * (1 / total)
     return arr
-    # tail = probs * prior * (1 - hazard)
-    # head = np.sum(probs * prior * hazard)
-    # total = (head + np.sum(tail))
-    # if total == 0:
-    #     arr[1:] = tail
-    #     arr[0] = head
-    # else:
-    #     arr[1:] = tail / total
-    #     arr[0] = head / total
-    # return arr
 
 
 @jit
 def calculate_probs_helper_3(probs, prior, hazard, idx):
     """ Calculate the new probabilities in-place."""
-    # head = np.sum(probs[0:idx]) * (prior * hazard)  # np.sum(probs[0:idx] * prior * hazard)
-    # tail = probs[0:idx] * (prior * (1 - hazard))
-    # probs[0] = head
-    # probs[1:idx + 1] = tail
-    # attempt 2
     total = np.sum(probs[0:idx])
     probs[1:idx + 1] = probs[0:idx] * (1 - hazard)
     probs[0] = total * hazard
@@ -259,9 +202,6 @@ def update_attack_v4(event):
     accum = event
     run_length_p = 1
     return run_length_p, accum
-
-
-# def increment_params():
 
 
 @jit
@@ -394,25 +334,6 @@ def t_pdf(t_value, df):
     return coeff * exponential
 
 
-# @jit
-# def t_pdf(t_value, df):
-#     # g_1, g_2 = gamma(((df + 1)/2, df/2))  # Scipy version of gamma
-#     g_1, g_2 = gamma((df + 1)/2), gamma(df/2)  # python math version of gamma
-#     # num = g_1  # gamma((df + 1) / 2)
-#     # denom = np.sqrt(np.pi * df) * g_2  # np.sqrt(np.pi * df) * gamma(df/2)
-#     coeff = g_1 / g_2  # g_1 / (np.sqrt(np.pi * df) * g_2)
-#     coeff = coeff / np.sqrt(np.pi * df)
-#     exponential = (1.0 + t_value**2/df)**(-(df + 1)/2)
-#     return coeff * exponential  # (num / denom) * exponential
-
-# @cache
-# def t_pdf(t_value, df):
-#     num = gamma((df + 1) / 2)
-#     denom = np.sqrt(np.pi * df) * gamma(df/2)
-#     exponential = (1 + np.square(t_value)/df)**(-(df + 1)/2)
-#     return (num / denom) * exponential
-
-
 @jit
 def beta_func(a, b):
     return np.exp(math.lgamma(a) + math.lgamma(b) - math.lgamma(a + b))
@@ -430,7 +351,6 @@ def get_bocpd(
     cps, cps_2 = 0, 0
     run_length = 1  # Iterations since last changepoint
     maxes = [0]
-    # prev_probabilities = list()
     probabilities = np.asarray([1])
     my_data = np.abs(np.asarray(data))
     mu = np.mean(my_data[:100])
@@ -438,17 +358,12 @@ def get_bocpd(
     accumulator = 0.0
     attack = False
     for idx, event in items:
-        # print(f'Accumulator: {accumulator}')
-        # prior = calculate_prior(event, alpha, beta, mu, kappa)
         probabilities = calculate_probabilities(
             idx, event, alpha, beta, mu, kappa, probabilities, lamb)
         max_idx = find_max_cp(probabilities)
         maxes.append(max_idx)
-        # if max_idx < maxes[idx] and max_idx != 0:
-        #     print('discrepancy')
         if maxes[idx + 1] < maxes[idx]:  # if max_idx == 0:
             # event is an attack
-            # run_length, ref_p_1 = update_attack(idx)
             run_length, accumulator = update_attack_v4(event)
             cps += 1
             attack = True
@@ -468,94 +383,12 @@ def get_bocpd(
             begin = idx
             shock = not shock
             attack = False
-        # if attack and not shock:  # If detected attack and not in shock state, change state
-        #     cps_2 += 1
-        #     non_shocks.append((time[begin], time[idx - 1]))
-        #     shock = True
-        #     begin = idx
-        # elif not attack and shock:
-        #     shocks.append((time[begin], time[idx - 1]))
-        #     shock = False
-        #     begin = idx
     print(f'Total changepoints: {cps} vs {cps_2}, max idx: {max(maxes)}')
     if shock:
         shocks.append((time[begin], time[-1]))
     else:
         non_shocks.append((time[begin], time[-1]))
     return shocks, non_shocks
-
-
-# def get_bocpd_2(time, data, mu, kappa, alpha, beta, lamb,
-#                 shock_intervals=None, non_shock_intervals=None, with_progress=False):
-#     """ """
-#     shocks = [] if shock_intervals is None else shock_intervals
-#     non_shocks = [] if non_shock_intervals is None else non_shock_intervals
-#     begin = 0
-#     shock = False
-#     cps, cps_2 = 0, 0
-#     my_data = np.abs(np.asarray(data))
-#     run_length = 1  # Iterations since last changepoint
-#     # max_val, max_idx = None, None
-#     max_val = 0  # -1e99 Assume the max value currently is the head
-#     head, tail = 1, 0
-#     accumulator = 0
-#     attack = False
-#     for idx, event in enumerate(tqdm(my_data)):
-#         # print(f'Accumulator: {accumulator}')
-#         prior = calculate_prior(event, alpha, beta, mu, kappa)
-#         hazard = hazard_function(lamb)
-#         non_cp = [head * prior * (1 - hazard), tail * prior * (1 - hazard)]
-#         cp = (head * prior * hazard) + (tail * prior * hazard)
-#         head, tail = cp, sum(non_cp)
-#         total = head + tail
-#         max_val = max_val * prior * (1 - hazard)
-#         if total != 0:
-#             head, tail = head / total, tail / total
-#             max_val = max_val / total
-#         # new_probs = calculate_probabilities(
-#         #     idx, event, alpha, beta, mu, kappa, probabilities, lamb)
-#         # probabilities = new_probs
-#         # print(f'Prior: {prior}')
-#         # print(f'head: {cp} tail: {tail}')
-#         # print(f'head: {cp} max value: {max(cp, max_val)}')
-#         # print(max_val)
-#         if cp > max_val:  # event is an attack
-#             # max_idx = 0
-#             max_val = cp
-#             run_length, accumulator = update_attack_v4(event)
-#             cps += 1
-#             attack = True
-#         else:
-#             # update
-#             run_length, accumulator, mu, kappa, alpha, beta = update_no_attack_v4(
-#                 my_data, idx, run_length, cp, accumulator, mu, kappa, alpha, beta)
-#             # print(f'Alpha: {alpha} Beta: {beta} Kappa: {kappa} Mu: {mu}')
-#         attack_prob = calculate_prior(event, alpha, beta, mu, kappa) < 0.1
-#         if attack_prob:
-#             cps_2 += 1
-#         if attack:
-#             if shock:
-#                 shocks.append((time[begin], time[idx - 1]))
-#             else:
-#                 non_shocks.append((time[begin], time[idx - 1]))
-#             begin = idx
-#             shock = not shock
-#             attack = False
-#         # if attack and not shock:  # If detected attack and not in shock state, change state
-#         #     cps_2 += 1
-#         #     non_shocks.append((time[begin], time[idx - 1]))
-#         #     shock = True
-#         #     begin = idx
-#         # elif not attack and shock:
-#         #     shocks.append((time[begin], time[idx - 1]))
-#         #     shock = False
-#         #     begin = idx
-#     print(f'Total changepoints: {cps} vs {cps_2}')
-#     if shock:
-#         shocks.append((time[begin], time[-1]))
-#     else:
-#         non_shocks.append((time[begin], time[-1]))
-#     return shocks, non_shocks
 
 
 def get_bocpd_windowed(time, data, mu, kappa, alpha, beta, lamb,
@@ -572,8 +405,6 @@ def get_bocpd_windowed(time, data, mu, kappa, alpha, beta, lamb,
     accumulator = 0
     attack = False
     probabilities = np.abs(np.asarray([1.0]))
-    # probabilities_2 = np.zeros(len(data)+1, dtype=np.float64)
-    # probabilities_2[0] = 1.0
     my_data = np.abs(np.asarray(data))
     mu = np.mean(my_data[:100])
     for idx in itr:
