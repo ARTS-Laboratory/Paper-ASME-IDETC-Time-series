@@ -27,22 +27,6 @@ def mean_array_helper(time, data, intervals, mean_levels):
             mean_levels[start_time] = data[start_time]
         else:
             mean_levels[start_time:stop_time] = np.mean(data[start_time:stop_time])
-    # if isinstance(time, list):
-    #     for (start, stop) in intervals:
-    #         start_time = time.index(start)
-    #         stop_time = time.index(stop)
-    #         if start_time == stop_time:
-    #             mean_levels[start_time] = data[start_time]
-    #         else:
-    #             mean_levels[start_time:stop_time] = np.mean(data[start_time:stop_time])
-    # elif isinstance(time, np.ndarray):
-    #     for (start, stop) in intervals:
-    #         start_time = np.where(time == start)[0][0]
-    #         stop_time = np.where(time == stop)[0][0]
-    #         if start_time == stop_time:
-    #             mean_levels[start_time] = data[start_time]
-    #         else:
-    #             mean_levels[start_time:stop_time] = np.mean(data[start_time:stop_time])
 
 
 def dev_array_helper(time, data, intervals, dev_levels):
@@ -52,22 +36,6 @@ def dev_array_helper(time, data, intervals, dev_levels):
             dev_levels[start_time] = 0.0
         else:
             dev_levels[start_time:stop_time] = np.std(data[start_time:stop_time])
-    # if isinstance(time, list):
-    #     for (start, stop) in intervals:
-    #         start_time = time.index(start)
-    #         stop_time = time.index(stop)
-    #         if start_time == stop_time:
-    #             dev_levels[start_time] = 0.0
-    #         else:
-    #             dev_levels[start_time:stop_time] = np.std(data[start_time:stop_time])
-    # elif isinstance(time, np.ndarray):
-    #     for (start, stop) in intervals:
-    #         start_time = np.where(time == start)[0][0]
-    #         stop_time = np.where(time == stop)[0][0]
-    #         if start_time == stop_time:
-    #             dev_levels[start_time] = 0.0
-    #         else:
-    #             dev_levels[start_time:stop_time] = np.std(data[start_time:stop_time])
 
 
 def get_deviation_array(time, data, shock_intervals, non_shock_intervals):
@@ -124,10 +92,6 @@ def plot_shock(time, data, shock_intervals, non_shock_intervals, title=True):
     # Shade regions
     plot_shock_helper(shock_intervals, 'red', 0.3)
     plot_shock_helper(non_shock_intervals, 'blue', 0.3)
-    # for start, end in shock_intervals:
-    #     plt.axvspan(start, end, facecolor='red', alpha=0.3)
-    # for start, end in non_shock_intervals:
-    #     plt.axvspan(start, end, facecolor='blue', alpha=0.3)
     # Setting plot details
     plt.xlim((time[0], time[-1]))
     plt.xlabel('time (s)')
@@ -150,10 +114,6 @@ def plot_shock_w_mean_std(time, data, shock_intervals, non_shock_intervals):
     # Shade regions
     plot_shock_helper(shock_intervals, 'red', 0.3)
     plot_shock_helper(non_shock_intervals, 'blue', 0.3)
-    # for start, end in shock_intervals:
-    #     plt.axvspan(start, end, facecolor='red', alpha=0.3)
-    # for start, end in non_shock_intervals:
-    #     plt.axvspan(start, end, facecolor='blue', alpha=0.3)
     # Setting plot details
     plt.xlim((time[0], time[-1]))
     plt.xlabel('time (s)')
