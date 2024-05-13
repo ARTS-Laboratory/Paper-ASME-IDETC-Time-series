@@ -31,8 +31,9 @@ def plot_signal_fft(time, data):
 
 
 def plot_signal_power_spectrum(time, data):
-    f, den = periodogram(data, metrics.sampling_frequency(time))
-    fig = plt.figure()
+    f, den = periodogram(data, 1 / metrics.sampling_frequency(time))
+    fig = plt.figure(layout='tight')
+    # plt.plot(f, den)
     plt.semilogy(f, den)
     return fig
 
