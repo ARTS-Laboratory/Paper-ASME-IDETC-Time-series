@@ -13,7 +13,9 @@ from utils.read_data import read_data_from_file
 def get_dni(
         times, data, num_samples, d_threshold, i_threshold,
         shock_intervals=None, non_shock_intervals=None):
-    """ """
+    """ Determine if points are in state of shock based on difference between adjacent points and point threshold.
+
+    """
     # Instantiating variables
     shocks = [] if shock_intervals is None else shock_intervals
     non_shocks = [] if non_shock_intervals is None else non_shock_intervals
