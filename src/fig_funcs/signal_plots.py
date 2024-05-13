@@ -18,7 +18,6 @@ def plot_signal(time, data, ms=False, fig_size=None):
         plt.xlim([time[0], time[-1]])
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-    # plt.tight_layout()
     return fig
 
 
@@ -57,7 +56,6 @@ def plot_overlay(time, data, ms=False, fig_size=None, labels=False, ylim=None):
         plt.ylabel(ylabel)
     if ylim is not None:
         plt.ylim(ylim)
-    # plt.tight_layout()
     return fig
 
 
