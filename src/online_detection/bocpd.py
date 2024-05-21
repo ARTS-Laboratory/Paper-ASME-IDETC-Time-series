@@ -429,7 +429,7 @@ def get_bocpd_windowed(time, data, mu, kappa, alpha, beta, lamb,
     maxes = [0]
     accumulator = 0
     attack = False
-    probabilities = np.abs(np.asarray([1.0]))
+    probabilities = np.asarray([1.0])
     my_data = np.abs(np.asarray(data))
     mu = np.mean(my_data[:100])
     for idx in itr:
@@ -491,15 +491,6 @@ def get_plot_bocpd(file_path, with_progress=False):
     shock_intervals, non_shock_intervals = get_bocpd(
         time, data, mu, kappa, alpha, beta, lamb, with_progress=with_progress)
     fig = plot_shock(time, data, shock_intervals, non_shock_intervals)
-
-    # mu, kappa, alpha, beta, lamb = np.mean(data[:100]), 0.1, 0.00001, 0.00001, 100
-    # mu = 0
-    # print(mu)
-    # alpha, beta = 0.1, 0.01  # alpha, beta = 1, 1
-
-    # shock_intervals_2, non_shock_intervals_2 = get_bocpd_2(
-    #     time, data, mu, kappa, alpha, beta, lamb, with_progress=with_progress)
-    # fig_2 = plot_shock(time, data, shock_intervals_2, non_shock_intervals_2)
 
     mu, kappa, alpha, beta, lamb = np.mean(data[:100]), 0.1, 0.00001, 0.00001, 100
     # mu = 0
