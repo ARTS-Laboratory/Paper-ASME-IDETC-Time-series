@@ -123,6 +123,31 @@ def bayesian_online_changepoint_detection_v4(data, mu, kappa, alpha, beta, lamb)
 
 
 @jit
+def bayesian_online_changepoint_detection_generator(
+        data, mu, kappa, alpha, beta, lamb, filter_threshold=1e-16,
+        attack_threshold=0.1):
+    """ """
+    maxes = [0]
+    for idx, event in data:
+        probabilities = calculate_probabilities(
+            idx, event, alpha, beta, mu, kappa, probabilities, lamb)
+        max_idx = find_max_cp(probabilities)
+        maxes.append(max_idx)
+        if maxes[idx + 1] < maxes[idx]:  # if max_idx == 0:
+            # event is an attack
+            run_length, accumulator = update_attack_v4(event)
+            # cps += 1
+            attack = True
+        else:
+            # update
+            cp = probabilities[0]
+            run_length, accumulator, mu, kappa, alpha, beta = update_no_attack_v5(
+                event, run_length, cp, accumulator, mu, kappa, alpha, beta)
+        attack_prob = calculate_prior(event, alpha, beta, mu, kappa) > 0.001  # < 0.1
+        yield attack_prob
+
+
+@jit
 def calculate_probabilities_inplace(idx, event, alpha, beta, mu, kappa, probabilities, lamb):
     """ """
     prior = calculate_prior(event, alpha, beta, mu, kappa)
