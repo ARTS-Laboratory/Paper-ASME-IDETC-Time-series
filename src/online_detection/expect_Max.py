@@ -131,6 +131,9 @@ def phi_v2(value, mean, variance):
         :returns: PDF of value given.
         :rtype: float
     """
+    if variance == 0.0:
+        print('Variance is zero')
+        variance = 1e-16
     # sigma = np.sqrt(variance)
     denom = np.sqrt(variance*2*np.pi)
     ex = np.exp(-0.5*(value - mean)**2/variance)
@@ -144,6 +147,8 @@ def posterior_prob(point, attack_prob, attack_mean, attack_var, normal_mean, nor
     # Divided by probability of point occurring
     num = attack_prob * phi_v2(point, attack_mean, attack_var)
     denom = num + (1 - attack_prob) * phi_v2(point, normal_mean, normal_var)
+    if denom == 0.0:
+        print(num)
     post = num / denom
     return post
 
