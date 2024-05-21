@@ -84,10 +84,35 @@ def plot_offline_detections(time, data):
     num_bkps = 2
     bkps = binary_segmentation.get_breaks(np.abs(data), num_bkps, model_type='rank')
     binary_segmentation.plot_breaks(data, bkps)
-    bkps = bottom_up.get_breaks(np.abs(data), num_bkps)
-    bottom_up.plot_breaks(data, bkps)
-    bkps = dynamic_programming.get_breaks(np.abs(data), num_bkps)
-    rupture_changepoint_plots.plot_breaks(data, bkps, show=True)
+    # plt.savefig('./figures/offline_rank_bin-seg.jpg', dpi=350)
+    # bkps = bottom_up.get_breaks(np.abs(data), num_bkps)
+    # bottom_up.plot_breaks(data, bkps)
+    # bkps = dynamic_programming.get_breaks(np.abs(data), num_bkps)
+    # rupture_changepoint_plots.plot_breaks(data, bkps, show=True)
+
+
+def make_ground_truth(time, data):
+    """"""
+    pass
+    shocks, nonshocks = list(), list()
+    num_bkps = 2
+    bkps = binary_segmentation.get_breaks(np.abs(data), num_bkps, model_type='rank')
+    begin = 0
+    shocked = False
+    n_bkps = len(bkps)
+    for bkp in bkps:
+        if bkp != n_bkps:
+            if shocked:
+                shocks.append(begin, bkp + 1)
+            else:
+                nonshocks.append(begin, bkp + 1)
+            shocked = not shocked
+            begin = bkp
+    return shocks, nonshocks
+
+    # binary_segmentation.plot_breaks(data, bkps)
+    # plt.savefig('./figures/05-21-2024/offline_rank_bin-seg.jpg', dpi=350)
+
 
 
 def plot_bocpd(time, data, show_progress=False):
