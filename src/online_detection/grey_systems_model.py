@@ -60,12 +60,14 @@ def grey_model_generator(data, window_size=1, c=3, c_ratio=300):
     z_1 = mean_sequence(x_1, alpha=0.5)
     s_1 = behavioral_sequence(z_1)
     s_1_ratio = behavioral_sequence_ratio(z_1)
+    s_1_ratio = behavioral_sequence_ratio_2(z_1)
     for idx in range(0, len(data) - window_size):
         window_2 = get_rolling_window(data, idx, window_size)
         x_2 = accumulation_sequence(window_2)
         z_2 = mean_sequence(x_2, alpha=0.5)
         s_2 = behavioral_sequence(z_2)
         s_2_ratio = behavioral_sequence_ratio(z_2)
+        s_2_ratio = behavioral_sequence_ratio_2(z_2)
         degree = grey_incidence_degree(s_1, s_2, c=c)
         degree_ratio = grey_incidence_degree_ratio(s_1_ratio, s_2_ratio, c=c_ratio)
         attack_likely = degree + degree_ratio <= 0.5
@@ -116,8 +118,27 @@ def behavioral_sequence(window):
 
 
 @jit
-def behavioral_sequence_ratio(window, offset=1):
-    s_0 = np.sum((window[:-1] + offset) / (window[0] + offset)) + ((0.5 * window[-1] + offset) / (0.5 * window[0] + offset))
+def behavioral_sequence_ratio(window, offset_1=1e-32, offset_2=1.0):
+    # v - vref / math.abs(vref)
+    # math.abs(x - y)/(math.abs(x) + math.abs(y))/2, (0, 0) = 0
+    # This assumes window is composed only of nonnegative numbers
+    s_0 = np.sum((window[:-1] + offset_2) / (window[0] + offset_2)) + 0.5 * ((window[-1] + offset_2) / (window[0] + offset_2))
+    # s_0 = ((0.5 * window[-1] + offset_2) / (0.5 * window[0] + offset_2))
+    # for item in window[:-1]:
+    #     if item != 0.0 or window[0] != 0.0:
+
+    return s_0
+
+
+@jit
+def behavioral_sequence_ratio_2(window):
+    """ """
+    head = window[0]
+    # s_0 = 0.5 * (window[-1] - head) / (np.abs(window[-1]) + np.abs(head))
+    s_0 = 0.5 * (window[-1] - head + 1) / (0.5 * (np.abs(window[-1]) + np.abs(head) + 1))
+    for item in window[:-1]:
+        if item != 0.0 or window[0] != 0.0:
+            s_0 += (item - head)/((np.abs(item) + np.abs(head)) * 0.5)  #
     return s_0
 
 
