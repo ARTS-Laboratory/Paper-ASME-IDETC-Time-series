@@ -17,6 +17,7 @@ import cProfile
 import numpy as np
 
 from online_detection.grey_systems_model import get_plot_grey_model, get_grey_model_from_generator, get_grey_model
+from online_detection.nonparametric_model import get_nonparametric_model_from_generator
 from utils.matplotlib_formatting import set_rc_params
 from utils.read_data import get_data
 
@@ -179,6 +180,17 @@ def plot_grey_model(time, data, show_progress=False):
         time, np.abs(data), window_size=window_size, c=c, c_ratio=c_ratio,
         with_progress=show_progress)
     fig = plot_shock(time, data, shock_intervals, non_shock_intervals)
+    plt.savefig('figures/5-21-2024/grey_model.png', dpi=350)
+
+
+def plot_nonparametric_model(time, data, show_progress=False):
+    """ """
+    window_size, crit_value = 100, 1.965
+    shock_intervals_gen, non_shock_intervals_gen = get_nonparametric_model_from_generator(
+        time, np.abs(data), window_size, crit_value=crit_value, with_progress=show_progress
+    )
+    fig = plot_shock(time, data, shock_intervals_gen, non_shock_intervals_gen)
+    plt.savefig('figures/5-21-2024/nonparametric', dpi=350)
 
 
 def plot_detections(file_path):
@@ -219,6 +231,8 @@ def plot_detections(file_path):
     # grey_abs_hist = interval_histogram(time, data, grey_shock, grey_non_shock)
     # grey_abs_hist = raw_histogram(time, data, grey_shock, grey_non_shock)
     # plt.savefig('', dpi=350)
+    # Nonparametric
+    plot_nonparametric_model(time, data, True)
 
 
 def profile():
@@ -230,13 +244,14 @@ def main():
     file_path = './data/Dataset-7-forced-vibration-and-shock/data/dataset-A/inputData1_raw.txt'
     my_data = get_data(file_path)
     time, data = my_data[:, 0], my_data[:, 1]
-    plot_offline_detections(time, data)
+    # plot_offline_detections(time, data)
     # make_signal_overlay_plot(time, data)
     # make_stacked_power_spectrum_plot(time, data)
+    # exit()
     plt.show()
     # temp()
     # plot_signals(file_path)
-    # plot_detections(file_path)
+    plot_detections(file_path)
     plt.show()
 
 
