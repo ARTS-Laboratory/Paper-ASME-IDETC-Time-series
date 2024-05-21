@@ -80,9 +80,9 @@ def raw_histogram(time, data, shock_intervals, non_shock_intervals, title=True):
 def plot_shock_helper(interval, color, alpha, ax=None):
     if ax is None:
         ax = plt.gca()
-    [ax.axvspan(start, end, facecolor=color, alpha=alpha) for start, end in interval]
-    # for start, end in interval:
-    #     ax.axvspan(start, end, facecolor=color, alpha=alpha)
+    # [ax.axvspan(start, end, facecolor=color, alpha=alpha) for start, end in interval]
+    for start, end in interval:
+        ax.axvspan(start, end, facecolor=color, alpha=alpha)
 
 
 def plot_shock(time, data, shock_intervals, non_shock_intervals, title=True):
