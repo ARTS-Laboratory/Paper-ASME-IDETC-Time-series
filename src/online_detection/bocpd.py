@@ -411,6 +411,8 @@ def get_bocpd_windowed(time, data, mu, kappa, alpha, beta, lamb,
         # shocks, non_shocks = get_bocpd(
         #     time, data[idx: idx + window_size], mu, kappa, alpha, beta, lamb)
         probabilities = np.asarray([1.0])
+        maxes = [0]
+        accumulator = 0.0
         for jdx, event in enumerate(my_data[idx:idx + window_size], start=idx):
             # print(f'Accumulator: {accumulator}')
             # prior = calculate_prior(event, alpha, beta, mu, kappa)
@@ -420,7 +422,7 @@ def get_bocpd_windowed(time, data, mu, kappa, alpha, beta, lamb,
             maxes.append(max_idx)
             # if max_idx < maxes[idx] and max_idx == 0:
             #     print('discrepancy')
-            if maxes[idx + 1] < maxes[idx]:  # if max_idx == 0:
+            if maxes[-1] < maxes[-2]:  # if max_idx == 0:
                 # event is an attack
                 run_length, accumulator = update_attack_v4(event)
                 cps += 1
