@@ -20,4 +20,4 @@ def get_breaks(signal, num_bkps, model_type='l2'):
 
 def plot_breaks(signal, num_bkps):
     fig, axes = rpt.show.display(signal, num_bkps)
-    plt.show()
+    # plt.show()
