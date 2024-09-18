@@ -175,13 +175,16 @@ def update_means(probs, inverse, density, inverse_density, events):
         :param events: List of events corresponding to probs.
         :rtype: (float, float)
         :returns: tuple of updated means (mean 1, mean 2)"""
-    mean_1_denom = inverse_density
-    mean_2_denom = density
-    mean_1_num = np.dot(inverse, events)
-    mean_2_num = np.dot(probs, events)
-    mean_1 = mean_1_num / mean_1_denom
-    mean_2 = mean_2_num / mean_2_denom
+    mean_1 = np.dot(inverse, events) / inverse_density
+    mean_2 = np.dot(probs, events) / density
     return mean_1, mean_2
+    # mean_1_denom = inverse_density
+    # mean_2_denom = density
+    # mean_1_num = np.dot(inverse, events)
+    # mean_2_num = np.dot(probs, events)
+    # mean_1 = mean_1_num / mean_1_denom
+    # mean_2 = mean_2_num / mean_2_denom
+    # return mean_1, mean_2
 
 
 @jit
