@@ -111,6 +111,39 @@ def plot_offline_detections(time, data, save_root=None):
     # bottom_up.plot_breaks(data, bkps)
     # bkps = dynamic_programming.get_breaks(np.abs(data), num_bkps)
     # rupture_changepoint_plots.plot_breaks(data, bkps, show=True)
+    # Make ground truth plot
+    ground_shocks_idx, ground_nonshocks_idx = make_ground_truth(time, data)
+    ground_shocks = [(time[start], time[stop - 1]) for start, stop in ground_shocks_idx]
+    ground_nonshocks = [(time[start], time[stop - 1]) for start, stop in ground_nonshocks_idx]
+    print('Shock event start and stop times')
+    for start, stop in ground_shocks:
+        print(f'Shock event start: {start}, shock event stop: {stop}')
+    ground_truth_fig = plot_shock(time, data, ground_shocks, ground_nonshocks)
+    plt.savefig(Path(save_dir, 'ground_truth_fig.pdf'))
+    plt.savefig(Path(save_dir, 'ground_truth_fig.png'), dpi=350)
+    plt.close(ground_truth_fig)
+
+
+def print_scores(time, ground, predictions):
+    """ Print metric scores for predicted shock prediction given comparator."""
+    # Calculate scores
+    f1_score = sklearn.metrics.f1_score(ground, predictions)
+    precision = sklearn.metrics.precision_score(ground, predictions)
+    recall = sklearn.metrics.recall_score(ground, predictions)
+    accuracy = sklearn.metrics.accuracy_score(ground, predictions)
+    dice_similarity = 1.0 - scipy.spatial.distance.dice(ground, predictions)
+    # Print scores
+    print(f'F1 score: {f1_score:.3f}, Precision: {precision:.3f}, Recall: {recall:.3f}, Accuracy: {accuracy:.3f}, Dice similarity: {dice_similarity:.3f}')
+    # Print confusion matrix
+    # confusion = sklearn.metrics.confusion_matrix(ground, predictions)
+    confusion = sklearn.metrics.confusion_matrix(ground, predictions, normalize='all')
+    print(confusion)
+    print(sklearn.metrics.classification_report(ground, predictions, digits=3))
+    # Price is right score
+    # todo we might need to assert that this is not empty before doing indexing, otherwise might break
+    true_positive_indices = np.logical_and(ground.astype(bool), predictions.astype(bool))
+    earliest_correct = time[true_positive_indices][0]
+    print(f'Shock first correctly detected at time: {earliest_correct}')
 
 
 def make_ground_truth(time, data):
