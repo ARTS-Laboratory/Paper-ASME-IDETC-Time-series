@@ -1,6 +1,9 @@
+import math
+
 import numpy as np
 
-from numba import jit
+from line_profiler import profile
+from numba import jit, njit
 from typing import List, Optional, Iterable
 from time import perf_counter
 from tqdm import tqdm
@@ -53,7 +56,7 @@ def expectation_maximization(
     return is_attack, mu1_hat, mu2_hat, sig1_hat, sig2_hat, pi_hat
 
 
-@jit
+# @njit
 def expectation_maximization_generator(
         safe, not_safe, unknowns, mean_1, mean_2, var_1,
         var_2, pi, epochs=1):
@@ -79,14 +82,21 @@ def expectation_maximization_generator(
     mu1_hat, mu2_hat = mean_1, mean_2
     sig1_hat, sig2_hat = var_1, var_2
     pi_hat = pi
+    last_attack_prob = np.empty_like(data)
+    last_attack_prob[:] = -1e99
+    out = np.empty((2, size))
+    attack_prob, inverse = out[0], out[1]
     for unknown in unknowns:
         data[-1] = unknown  # reassign last value to our new unknown
         # For some number of epochs, iterate over given data until convergence
-        last_attack_prob = np.full_like(data, fill_value=-1e99)
         for idx in range(epochs):
             # Expectation
-            attack_prob, inverse = posterior_probs_v2(
-                data, pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat)
+            posterior_probs_v2_inplace(
+                data, pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat, out)
+            # attack_prob, inverse = posterior_probs_v2(
+            #     data, pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat)
+            # attack_prob, inverse = posterior_probs_v3(
+            #     data, pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat)
             # Maximization
             mu1_hat, mu2_hat, sig1_hat, sig2_hat, pi_hat = maximization(
                 data, attack_prob, inverse, mu1_hat, mu2_hat,
@@ -95,20 +105,20 @@ def expectation_maximization_generator(
                 break
             last_attack_prob[:] = attack_prob
         is_attack = posterior_prob(
-            data[-1], pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat) > 0.01
+            unknown, pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat) > 0.01
         yield is_attack
 
 
-@jit(cache=True)
+@njit(cache=True)
 def close_enough(a, b):
     return np.allclose(a, b) and np.allclose(b, a)
 
 
-@jit
+@njit
 def maximization(data, attack_prob, inverse, mu1_hat, mu2_hat, sig1_hat, sig2_hat, pi_hat, size):
     """
     """
-    density, inverse_density = np.sum(attack_prob), np.sum(inverse)
+    density, inverse_density = attack_prob.sum(), inverse.sum()
     # If all probabilities are zero for attack or not attack, no need to update
     if not (density == 0 or inverse_density == 0):
         new_mu1_hat, new_mu2_hat = update_means(
@@ -121,7 +131,7 @@ def maximization(data, attack_prob, inverse, mu1_hat, mu2_hat, sig1_hat, sig2_ha
     return mu1_hat, mu2_hat, sig1_hat, sig2_hat, pi_hat
 
 
-@jit(cache=True)
+@njit
 def phi_v2(value, mean, variance):
     """ Return the probability density function for value.
 
@@ -217,7 +227,8 @@ def posterior_prob(point, attack_prob, attack_mean, attack_var, normal_mean, nor
     return num / denom
 
 
-@jit
+# @profile
+@njit
 def posterior_probs_v2(points, attack_prob, attack_mean, attack_var, normal_mean, normal_var):
     """ Calculate probabilities of each latent variable for each data point."""
     num_1 = np.empty_like(points)
@@ -264,7 +275,29 @@ def posterior_probs_v2_inplace(points, attack_prob, attack_mean, attack_var, nor
     normalize_probs(num_1, num_2, denom)
 
 
-@jit
+# @profile
+# @njit
+# def posterior_probs_v3(points, attack_prob, attack_mean, attack_var, normal_mean, normal_var):
+#     """ """
+#     # case 1: both nonzero variance
+#     arr_1 = np.array(([attack_mean, attack_var, attack_prob], [normal_mean, normal_var, 1 - attack_prob]))
+#     probs_inverse = np.subtract.outer(points, arr_1[:, 0])
+#     probs_inverse **= 2
+#     probs_inverse *= 0.5
+#     probs_inverse /= arr_1[:, 1]
+#     # e^probs_inverse in-place
+#     np.exp(probs_inverse, probs_inverse)
+#     probs_inverse *= arr_1[:, 2]
+#     probs_inverse /= np.sqrt(arr_1[:, 1])
+#     denom = np.sum(probs_inverse, axis=1)
+#     denom_nonzero_idx = denom != 0.0
+#     probs_inverse[:, 0] = np.where(denom_nonzero_idx, probs_inverse[:, 0] / denom, probs_inverse[:, 0])
+#     probs_inverse[:, 1] = np.where(denom_nonzero_idx, probs_inverse[:, 1] / denom, probs_inverse[:, 1])
+#     probs, inverse = np.split(probs_inverse.T, 2)
+#     return probs.ravel(), inverse.ravel()
+
+
+@njit
 def update_means(probs, inverse, density, inverse_density, events):
     """ Return updated values for means.
 
@@ -289,13 +322,13 @@ def update_means(probs, inverse, density, inverse_density, events):
     # return mean_1, mean_2
 
 
-@jit
+@njit
 def variance_helper(probs, events, mean):
     """ """
     return np.dot(probs, np.square(events - mean))
 
 
-@jit
+@njit
 def update_variances(probs, inverse, density, inverse_density, events, mean_1, mean_2):
     """ Return updated variances.
 
@@ -317,7 +350,7 @@ def update_variances(probs, inverse, density, inverse_density, events, mean_1, m
     return var_1, var_2
 
 
-@jit
+@njit
 def update_attack_prob(density, size):
     """ Return updated attack probability.
 
