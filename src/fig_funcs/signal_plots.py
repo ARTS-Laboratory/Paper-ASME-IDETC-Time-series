@@ -149,3 +149,10 @@ def power_spectra_sections(time, data):
     # plt.savefig('figures/stacked_power_spectrum_fig.png', dpi=350)
     # plt.close()
 
+
+def fft_plot(ax: plt.Axes, time, data, y_log=False):
+    """ """
+    ax.plot(time, data)
+    if y_log:
+        ax.set_xscale('log')
+    return ax
