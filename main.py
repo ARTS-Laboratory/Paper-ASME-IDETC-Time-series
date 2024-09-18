@@ -322,8 +322,7 @@ def plot_nonparametric_model(time, data, show_progress=False, save_root=None):
     """ """
     window_size, crit_value = 100, 1.965
     shock_intervals_gen, non_shock_intervals_gen = get_nonparametric_model_from_generator(
-        time, np.abs(data), window_size, crit_value=crit_value, with_progress=show_progress
-    )
+        time, data, window_size, crit_value=crit_value, with_progress=show_progress)
     fig = plot_shock(time, data, shock_intervals_gen, non_shock_intervals_gen)
     plt.savefig(Path(save_dir, 'nonparametric.png'), dpi=350)
     # Evaluation stuff
