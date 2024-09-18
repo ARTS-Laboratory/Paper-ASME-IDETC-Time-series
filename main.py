@@ -222,21 +222,35 @@ def plot_cusum(time, data, show_progress=False, save_root=None):
     # transformed_data =
     shock_intervals, non_shock_intervals = get_cusum_revised(time, data, len(data))
     fig_revised = plot_shock(time, data, shock_intervals, non_shock_intervals)
-    plt.savefig('figures/5-14-2024/cusum_revised_fig.png', dpi=350)
+    plt.savefig(Path(save_dir, 'cusum_revised_fig.png'), dpi=350)
     plt.close(fig_revised)
-    mean, std = np.mean(data[:1_000]), np.std(data[:1_000])
+    # Evaluation stuff
+    (true_shocks, true_nonshocks) = make_ground_truth(time, data)
+    pred = intervals_to_dense_arr(time, shock_intervals, non_shock_intervals)
+    ground = convert_interval_indices_to_full_arr(true_shocks, true_nonshocks, len(time))
+    print_scores(time, ground, pred)
+    mean, std = np.mean(data[:100_000]), np.std(data[:100_000])
     # shock_intervals, non_shock_intervals = simple_cusum(times, data, mean, std)
     # fig = plot_shock(time, data, shock_intervals, non_shock_intervals)
     # plt.savefig('figures/5-14-2024/simple_cusum_fig.jpg', dpi=350)
     # shock_intervals, non_shock_intervals = cusum(time, data, mean, std, alpha=0.025, beta=0.025)  # , alpha=0.025, beta=0.025
     # fig = plot_shock(time, data, shock_intervals, non_shock_intervals)
     # plt.savefig('figures/5-14-2024/cusum_fig.png', dpi=350)
-    shock_intervals, non_shock_intervals = cusum_alg(time, data, mean, std, h=5, alpha=0.25)
+    shock_intervals, non_shock_intervals = cusum_alg(
+        time, data, mean, std, h=5, alpha=0.95)  # 0.001
     fig_alg = plot_shock(time, data, shock_intervals, non_shock_intervals)
-    plt.savefig('figures/5-14-2024/cusum_alg_fig.jpg', dpi=350)
+    plt.savefig(Path(save_dir, 'cusum_alg_fig.png'), dpi=350)
     plt.close(fig_alg)
-    # cusum_abs_hist = interval_histogram(time, data, cusum_shock, cusum_non_shock)
-    # cusum_abs_hist = raw_histogram(time, data, cusum_shock, cusum_non_shock)
+    pred = intervals_to_dense_arr(time, shock_intervals, non_shock_intervals)
+    print_scores(time, ground, pred)
+
+    shock_intervals, non_shock_intervals = cusum_alg_v1(
+        time, data, mean, std, h=5, alpha=0.999)  # 0.001
+    fig_alg = plot_shock(time, data, shock_intervals, non_shock_intervals)
+    plt.savefig(Path(save_dir, 'cusum_alg_v1_fig.png'), dpi=350)
+    plt.close(fig_alg)
+    pred = intervals_to_dense_arr(time, shock_intervals, non_shock_intervals)
+    print_scores(time, ground, pred)
 
 
 def plot_expectation_maximization(time, data, show_progress=False, save_root=None):
