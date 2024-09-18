@@ -20,53 +20,60 @@ from online_detection.grey_systems_model import get_plot_grey_model, get_grey_mo
 from online_detection.nonparametric_model import get_nonparametric_model_from_generator
 from utils.matplotlib_formatting import set_rc_params
 from utils.read_data import get_data
+from utils.write_data import save_path
 
 
-def make_stacked_power_spectrum_plot(time, data):
-    """ """
+def make_stacked_power_spectrum_plot(time, data, save_root=None):
+    """ Plot different sections of the power spectra for the data."""
+    save_dir = save_path(save_root)
     power_spectra_sections(time, data)
+    plt.savefig(Path(save_dir, 'stacked_power_spectrum.pdf'))
+    plt.savefig(Path(save_dir, 'stacked_power_spectrum.png'), dpi=350)
     # plt.show()
 
 
-def make_signal_overlay_plot(time, data):
+def make_signal_overlay_plot(time, data, save_root=None):
     """ """
-    signal_with_inset_axes(time, data, ms=True)
-    # signal_with_overlays(time, data)
+    save_dir = save_path(save_root)
+    fig = signal_with_inset_axes(time, data, ms=True)
+    plt.savefig(Path(save_dir, 'signal_plots', 'inset_signal.png'), dpi=350)
+    plt.close(fig)
 
 
-def make_signal_plots(file_path):
+def make_signal_plots(time, data, save_root=None):
     """ """
-    my_data = get_data(file_path)
-    time, data = my_data[:, 0], my_data[:, 1]
-    plt.close('all')
+    save_dir = Path(save_path(save_root), 'signal_plots')
     # Plots for whole signal
     fig = plot_signal(time, data, ms=True)
-    plt.savefig('figures/signal_fig.jpg', dpi=350)
-    plt.close()
-    # normal_fft_fig = plot_signal_fft(time, data)
-    # plt.savefig('figures/fft_fig.jpg', dpi=350)
-    plt.close()
+    plt.savefig(Path(save_dir, 'signal_fig.png'), dpi=350)
+    plt.close(fig)
+    normal_fft_fig = plot_signal_fft(time, data)
+    plt.savefig(Path(save_dir, 'fft_fig.png'))
+    plt.close(normal_fft_fig)
     normal_per_fig = plot_signal_power_spectrum(time, data)
-    plt.savefig('figures/power_spectrum_fig.jpg', dpi=350)
-    plt.close()
+    plt.savefig(Path(save_dir, 'power_spectrum_fig.png'), dpi=350)
+    plt.close(normal_per_fig)
     # Plots for safe section of signal
-    plt.close('all')
     normal_fig = plot_signal(time[:100_000], data[:100_000], ms=True)
-    plt.savefig('figures/safe_signal_fig.jpg', dpi=350)
+    plt.savefig(Path(save_dir, 'safe_signal_fig.png'), dpi=350)
+    plt.close(normal_fig)
     normal_per_fig = plot_signal_power_spectrum(time[:100_000], data[:100_000])
-    plt.savefig('figures/safe_power_spectrum_fig.jpg', dpi=350)
-    plt.close()
+    plt.savefig(Path(save_dir, 'safe_power_spectrum_fig.png'), dpi=350)
+    plt.close(normal_per_fig)
     # Plots for shock section of signal
     shock_fig = plot_signal(time[200_000:400_000], data[200_000:400_000], ms=True)
-    plt.savefig('figures/shock_signal_fig.jpg', dpi=350)
+    plt.savefig(Path(save_dir, 'shock_signal_fig.png'), dpi=350)
+    plt.close(shock_fig)
     normal_per_fig = plot_signal_power_spectrum(time[200_000:400_000], data[200_000:400_000])
-    plt.savefig('figures/shock_power_spectrum_fig.jpg', dpi=350)
-    plt.close()
+    plt.savefig(Path(save_dir, 'shock_power_spectrum_fig.png'), dpi=350)
+    plt.close(normal_per_fig)
     # Plots for post shock section of signal
     post_shock_fig = plot_signal(time[400_000:], data[400_000:], ms=True)
-    plt.savefig('figures/post_shock_signal_fig.jpg', dpi=350)
+    plt.savefig(Path(save_dir, 'post_shock_signal_fig.png'), dpi=350)
+    plt.close(post_shock_fig)
     normal_per_fig = plot_signal_power_spectrum(time[400_000:], data[400_000:])
-    plt.savefig('figures/post_shock_power_spectrum_fig.jpg', dpi=350)
+    plt.savefig(Path(save_dir, 'post_shock_power_spectrum_fig.png'), dpi=350)
+    plt.close(normal_per_fig)
     # normal_fft_fig_2 = plot_signal_fft(time[:100_000], data[:100_000])
     # normal_per_fig_2 = plot_signal_power_spectrum(time[:100_000], data[:100_000])
     # plt.show()
@@ -79,8 +86,10 @@ def plot_signals(file_path):
     make_signal_plots(file_path)
 
 
-def plot_offline_detections(time, data):
-    """ """
+
+def plot_offline_detections(time, data, save_root=None):
+    """ Plot figures for shock detection via offline detection algorithms."""
+    save_dir = save_path(save_root)
     num_bkps = 2
     bkps = binary_segmentation.get_breaks(np.abs(data), num_bkps, model_type='rank')
     binary_segmentation.plot_breaks(data, bkps)
@@ -114,9 +123,27 @@ def make_ground_truth(time, data):
     # plt.savefig('./figures/05-21-2024/offline_rank_bin-seg.jpg', dpi=350)
 
 
-
-def plot_bocpd(time, data, show_progress=False):
+def plot_bocpd(time, data, show_progress=False, ground=None, save_root=None):
     """ """
+    # todo make kwargs parser for run configs
+    save_dir = save_path(save_root)
+    # Generate segments to be used as ground truth
+    # todo save ground truth as numpy array file and load it
+    (true_shocks, true_nonshocks) = make_ground_truth(time, data)
+    ground = convert_interval_indices_to_full_arr(true_shocks, true_nonshocks, len(time))
+    # BOCPD algorithms start running
+    # new hyperparameters
+    kappa = 100.0
+    alpha = kappa * 0.5
+    mu = np.mean(data[:100_000])
+    beta = alpha * np.var(data[:100_000])
+    #old hyperparameters
+    # kappa = 50
+    # alpha = kappa / 2.0
+    # beta = kappa / np.var(data[:kappa])
+    # mu = np.mean(data[:kappa])
+    # alpha, beta, mu, kappa = 0.5, 1, 0.0, 1.0
+    # cache = {time_val: idx for idx, time_val in time}
     print('BOCPD detection')
     # Non-windowed version
     mu, kappa, alpha, beta, lamb = np.mean(data[:100]), 0.1, 0.00001, 0.00001, 100
@@ -142,8 +169,9 @@ def plot_bocpd(time, data, show_progress=False):
     # bocpd_raw_hist = raw_histogram(time, data, bocpd_shock, bocpd_non_shock)
 
 
-def plot_cusum(time, data, show_progress=False):
+def plot_cusum(time, data, show_progress=False, save_root=None):
     """ """
+    save_dir = save_path(save_root)
     print('Starting CUSUM Algorithms')
     # transformed_data =
     shock_intervals, non_shock_intervals = get_cusum_revised(time, data, len(data))
@@ -165,8 +193,9 @@ def plot_cusum(time, data, show_progress=False):
     # cusum_abs_hist = raw_histogram(time, data, cusum_shock, cusum_non_shock)
 
 
-def plot_expectation_maximization(time, data, show_progress=False):
+def plot_expectation_maximization(time, data, show_progress=False, save_root=None):
     """ """
+    save_dir = save_path(save_root)
     print('Starting Expectation Maximization Algorithm')
     my_data = np.abs(data)
     mean_1 = np.mean(my_data[:100_000])
@@ -190,8 +219,9 @@ def plot_expectation_maximization(time, data, show_progress=False):
     plt.close(fig)
 
 
-def plot_grey_model(time, data, show_progress=False):
+def plot_grey_model(time, data, show_progress=False, save_root=None):
     """ """
+    save_dir = save_path(save_root)
     print('Starting Grey Models')
     window_size, c, c_ratio = 100, 3.0, 0.01  # 1.0
     print('grey model generator')
@@ -208,19 +238,28 @@ def plot_grey_model(time, data, show_progress=False):
     plt.savefig('figures/5-21-2024/grey_model.png', dpi=350)
 
 
-def plot_nonparametric_model(time, data, show_progress=False):
+def plot_nonparametric_model(time, data, show_progress=False, save_root=None):
     """ """
     window_size, crit_value = 100, 1.965
     shock_intervals_gen, non_shock_intervals_gen = get_nonparametric_model_from_generator(
         time, np.abs(data), window_size, crit_value=crit_value, with_progress=show_progress
     )
     fig = plot_shock(time, data, shock_intervals_gen, non_shock_intervals_gen)
-    plt.savefig('figures/5-21-2024/nonparametric', dpi=350)
+    plt.savefig(Path(save_dir, 'nonparametric.png'), dpi=350)
+    # Evaluation stuff
+    (true_shocks, true_nonshocks) = make_ground_truth(time, data)
+    pred = intervals_to_dense_arr(time, shock_intervals_gen, non_shock_intervals_gen)
+    ground = convert_interval_indices_to_full_arr(true_shocks, true_nonshocks, len(time))
+    print_scores(time, ground, pred)
 
 
-def plot_detections(file_path):
+
+
+def plot_detections(file_path, save_root=None):
     """ """
-    my_data = get_data(file_path)
+    save_dir = save_path(save_root)
+    # save_dir = Path('figures', '2024-09-03', 'signal-1')
+    my_data = get_data(file_path).astype('float32')
     time, data = my_data[:, 0], my_data[:, 1]
     # DNI
     # dni_shock, dni_non_shock, dni_fig = get_plot_dni(file_path)
