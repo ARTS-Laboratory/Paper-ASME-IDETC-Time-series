@@ -7,54 +7,7 @@ from matplotlib import pyplot as plt
 from matplotlib.patches import Rectangle
 
 from utils import metrics
-
-
-def get_mean_array(time, data, shock_intervals, non_shock_intervals):
-    """ """
-    mean_levels = np.zeros_like(data)  # time or data, shouldn't matter
-    mean_array_helper(time, data, shock_intervals, mean_levels)
-    mean_array_helper(time, data, non_shock_intervals, mean_levels)
-    return mean_levels
-
-
-def convert_intervals_to_time(time, intervals):
-    if isinstance(time, list):
-        return [(time.index(start), time.index(stop)) for start, stop in intervals]
-    elif isinstance(time, np.ndarray):
-        return [(np.where(time == start)[0][0], np.where(time == stop)[0][0]) for start, stop in intervals]
-
-
-def mean_array_helper(time, data, intervals, mean_levels):
-    """ """
-    for (start_time, stop_time) in convert_intervals_to_time(time, intervals):
-        if start_time == stop_time:
-            mean_levels[start_time] = data[start_time]
-        else:
-            mean_levels[start_time:stop_time] = np.mean(data[start_time:stop_time])
-
-
-def dev_array_helper(time, data, intervals, dev_levels):
-    """ """
-    for (start_time, stop_time) in convert_intervals_to_time(time, intervals):
-        if start_time == stop_time:
-            dev_levels[start_time] = 0.0
-        else:
-            dev_levels[start_time:stop_time] = np.std(data[start_time:stop_time])
-
-
-def get_deviation_array(time, data, shock_intervals, non_shock_intervals):
-    """ """
-    dev_levels = np.zeros_like(data) # time or data, shouldn't matter
-    dev_array_helper(time, data, shock_intervals, dev_levels)
-    dev_array_helper(time, data, non_shock_intervals, dev_levels)
-    return dev_levels
-
-
-def get_std_ratio(time, data, shock_intervals, non_shock_intervals):
-    """ """
-    devs = get_deviation_array(time, data, shock_intervals, non_shock_intervals)
-    base_val = devs[0]
-    return devs / base_val
+from utils.detection_arr_helpers import get_mean_array, convert_intervals_to_time, get_deviation_array
 
 
 def interval_histogram(time, data, shock_intervals, non_shock_intervals, title=True):
