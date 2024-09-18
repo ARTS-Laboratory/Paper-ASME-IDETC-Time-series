@@ -59,6 +59,7 @@ def get_fft_score(dataset, synth):
 def sampling_frequency(time_vec: ndarray):
     return (time_vec[-1] - time_vec[0]) / time_vec.size
 
+
 def abs_mean(vector: ndarray) -> ndarray:
     """ Return absolute mean of vector."""
     return np.mean(np.abs(vector), axis=-1)
