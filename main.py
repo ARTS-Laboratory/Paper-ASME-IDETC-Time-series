@@ -193,28 +193,26 @@ def plot_bocpd(time, data, show_progress=False, ground=None, save_root=None):
     # alpha, beta, mu, kappa = 0.5, 1, 0.0, 1.0
     # cache = {time_val: idx for idx, time_val in time}
     print('BOCPD detection')
-    # Non-windowed version
-    mu, kappa, alpha, beta, lamb = np.mean(data[:100]), 0.1, 0.00001, 0.00001, 100
-    lamb = 100
-    # alpha, beta = 0.1, 0.01
-    shock_intervals, non_shock_intervals = get_bocpd(
-        time, data, mu, kappa, alpha, beta, lamb, with_progress=show_progress)
-    fig = plot_shock(time, data, shock_intervals, non_shock_intervals)
-    plt.savefig('figures/5-14-2024/bocpd_fig.png', dpi=350)
-    plt.close(fig)
-    # Windowed version
-    mu, kappa, alpha, beta, lamb = np.mean(data[:100]), 0.1, 0.00001, 0.00001, 100
-    # mu = 0
-    alpha, beta = 1, 1
-    # alpha, beta = 0.1, 0.01
-    lamb = 100
-    shock_intervals_w, non_shock_intervals_w = get_bocpd_windowed(
-        time, data, mu, kappa, alpha, beta, lamb, window_size=10, with_progress=show_progress)
-    fig_w = plot_shock(time, data, shock_intervals_w, non_shock_intervals_w)
-    plt.savefig('figures/5-14-2024/bocpd_windowed_fig.png', dpi=350)
-    plt.close(fig_w)
-    # cusum_abs_hist = interval_histogram(time, data, cusum_shock, cusum_non_shock)
-    # bocpd_raw_hist = raw_histogram(time, data, bocpd_shock, bocpd_non_shock)
+    # test
+    print('Start of test')
+    test_shocks, test_nonshocks = get_bocpd_v5_from_generator(
+        time, data, mu, kappa, alpha, beta, 100, with_progress=True)
+    test_fig_1 = plot_shock(time, data, test_shocks, test_nonshocks)
+    plt.savefig(Path(save_dir, 'bocpd_fig.png'), dpi=350)
+    # # Evaluation stuff
+    # pred = intervals_to_dense_arr(time, test_shocks, test_nonshocks)
+    # print_scores(time, ground, pred)
+    # bayesian_online_changepoint_detection_v5(np.abs(data), np.mean(np.abs(data[:100])), 0.1, 1, 100, 100)
+    test_shocks, test_nonshocks = get_bocpd_v5_from_generator(
+        time, data, np.mean(np.abs(data[:100])), 0.1, 0.1, 0.01, 100,
+        with_progress=True)
+    test_fig_2 = plot_shock(time, data, test_shocks, test_nonshocks)
+    plt.savefig(Path(save_dir, 'bocpd_2_fig.png'), dpi=350)
+    # # Evaluation stuff
+    # pred = intervals_to_dense_arr(time, test_shocks, test_nonshocks)
+    # print_scores(time, ground, pred)
+    print('End of test')
+    # plt.show()
 
 
 def plot_cusum(time, data, show_progress=False, save_root=None):
