@@ -132,34 +132,136 @@ def phi_v2(value, mean, variance):
         :rtype: float
     """
     if variance == 0.0:
-        print('Variance is zero')
-        variance = 1e-16
-    # sigma = np.sqrt(variance)
-    denom = np.sqrt(variance*2*np.pi)
+        return np.where(value == mean, 1.0, 0.0)
     ex = np.exp(-0.5*(value - mean)**2/variance)
+    ex /= np.sqrt(variance*2*np.pi)
+    return ex
+
+
+@njit
+def phi_single(value, mean, variance):
+    """ Return the probability density function for a single value.
+
+        :param float value: Value to get function for.
+        :param float mean: Population mean.
+        :param float variance: Population variance.
+        :returns: PDF of value given.
+        :rtype: float
+    """
+    if variance == 0.0:
+        return 1.0 if value == mean else 0.0
+    # sigma = np.sqrt(variance)
+    denom = math.sqrt(variance*2*np.pi)
+    ex = math.exp(-0.5*(value - mean)**2/variance)
     return ex/denom
 
 
-@jit
+# @profile
+@njit
+def phi(values, mean, variance):
+    """ Return the probability density function for some values.
+
+        :param ndarray values: Value to get function for.
+        :param float mean: Population mean.
+        :param float variance: Population variance.
+        :returns: PDF of value given.
+        :rtype: float
+    """
+    if variance == 0.0:
+        return np.where(values == mean, 1.0, 0.0)
+    # denom =   # math.sqrt(variance*2*np.pi)
+    ex = values - mean
+    ex **= 2
+    ex *= -0.5 / variance
+    np.exp(ex, ex)
+    # ex = np.exp((values - mean)**2 * (-0.5 / variance))
+    return ex / math.sqrt(variance)
+
+
+# @profile
+@njit
+def phi_inplace(values, mean, variance, out):
+    """ Return the probability density function for some values.
+
+        :param ndarray values: Value to get function for.
+        :param float mean: Population mean.
+        :param float variance: Population variance.
+        :returns: PDF of value given.
+        :rtype: float
+    """
+    if variance == 0.0:
+        for idx, value in enumerate(values):
+            out[idx] = 1.0 if value == mean else 0.0
+        # out[:] = np.where(values == mean, 1.0, 0.0)
+        return
+    # denom =   # math.sqrt(variance*2*np.pi)
+    out[:] = values
+    out -= mean
+    out **= 2
+    out *= -0.5 / variance
+    np.exp(out, out)
+    # ex = np.exp((values - mean)**2 * (-0.5 / variance))
+    out /= math.sqrt(variance)
+
+
+@njit
 def posterior_prob(point, attack_prob, attack_mean, attack_var, normal_mean, normal_var):
     """ Calculate probability of latent variable for given data point."""
     # Probability of attack * Probability of point occurring if it was an attack
     # Divided by probability of point occurring
-    num = attack_prob * phi_v2(point, attack_mean, attack_var)
-    denom = num + (1 - attack_prob) * phi_v2(point, normal_mean, normal_var)
+    num = attack_prob * phi_single(point, attack_mean, attack_var)
+    denom = num + (1 - attack_prob) * phi_single(point, normal_mean, normal_var)
     if denom == 0.0:
-        print(num)
-    post = num / denom
-    return post
+        # print(f'There exists a zero here: {num}')
+        return num
+    return num / denom
 
 
 @jit
 def posterior_probs_v2(points, attack_prob, attack_mean, attack_var, normal_mean, normal_var):
     """ Calculate probabilities of each latent variable for each data point."""
-    num_1 = phi_v2(points, attack_mean, attack_var) * attack_prob
-    num_2 = phi_v2(points, normal_mean, normal_var) * (1 - attack_prob)
-    denom = 1 / (num_1 + num_2)
-    return num_1 * denom, num_2 * denom
+    num_1 = np.empty_like(points)
+    phi_inplace(points, attack_mean, attack_var, num_1)
+    # num_1 = phi(points, attack_mean, attack_var)
+    num_1 *= attack_prob
+    # new lines
+    num_2 = np.empty_like(points)
+    phi_inplace(points, normal_mean, normal_var, num_2)
+    num_2 *= (1 - attack_prob)
+    # old line
+    # num_2 = phi(points, normal_mean, normal_var) * (1 - attack_prob)
+    # if np.any(num_1 + num_2 == 0.0):
+    #     print('We have a zero')
+    denom = num_1 + num_2
+    normalize_probs(num_1, num_2, denom)
+    return num_1, num_2
+    # denom_nonzero_idx = denom != 0.0
+    # probs = np.where(denom_nonzero_idx, num_1 / denom, num_1)
+    # inverse = np.where(denom_nonzero_idx, num_2 / denom, num_2)
+    # return probs, inverse
+
+
+@njit
+def normalize_probs(probs, inverse, denom):
+    for idx, value in enumerate(denom):
+        if value != 0.0:
+            probs[idx] /= value
+            inverse[idx] /= value
+
+
+# @profile
+@njit
+def posterior_probs_v2_inplace(points, attack_prob, attack_mean, attack_var, normal_mean, normal_var, out):
+    """ Calculate probabilities of each latent variable for each data point."""
+    num_1 = out[0]
+    num_2 = out[1]
+    phi_inplace(points, attack_mean, attack_var, out[0])
+    num_1 *= attack_prob
+    # new lines
+    phi_inplace(points, normal_mean, normal_var, num_2)
+    num_2 *= (1 - attack_prob)
+    denom = num_1 + num_2
+    normalize_probs(num_1, num_2, denom)
 
 
 @jit
