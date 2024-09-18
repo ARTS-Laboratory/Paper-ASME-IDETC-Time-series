@@ -1,8 +1,7 @@
-import itertools
 from functools import cache
 
 import numpy as np
-from numba import jit
+from numba import njit
 from tqdm import tqdm
 
 from fig_funcs.detection_plots import plot_shock
@@ -43,7 +42,7 @@ def grey_model(data, window_size=1, c=3, c_ratio=300):
     return
 
 
-@jit
+@njit
 def grey_model_generator(data, window_size=1, c=3, c_ratio=300):
     """ Return Grey Model predictions for given data.
 
@@ -53,8 +52,6 @@ def grey_model_generator(data, window_size=1, c=3, c_ratio=300):
         :param float c_ratio: Constant multiplier for degree of ratio grey incidence.
         :returns:
         :rtype: None"""
-    cps = 0
-    attack = False
     window_1 = get_rolling_window(data, 0, window_size)
     x_1 = accumulation_sequence(window_1)
     z_1 = mean_sequence(x_1, alpha=0.5)
@@ -72,10 +69,9 @@ def grey_model_generator(data, window_size=1, c=3, c_ratio=300):
         degree_ratio = grey_incidence_degree_ratio(s_1_ratio, s_2_ratio, c=c_ratio)
         attack_likely = degree + degree_ratio <= 0.5
         yield attack_likely
-    print(cps)
 
 
-@jit
+@njit
 def accumulation_sequence(window):
     """ Return the accumulation over the window."""
     # return np.add.accumulate(window)
@@ -84,7 +80,7 @@ def accumulation_sequence(window):
     return output
 
 
-@jit
+@njit
 def mean_sequence(window, alpha=0.5):
     """ Return the running average over a window."""
     transformed = np.empty_like(window)
@@ -94,47 +90,30 @@ def mean_sequence(window, alpha=0.5):
         val = mean_helper(val, window[idx], alpha)
         transformed[idx] = val
     return transformed
-    # transformed = [window[0]]
-    # transformed.extend(
-    #     [prev * alpha + (1.0 - alpha) * curr] for (prev, curr) in itertools.pairwise(window))
-    # transformed.extend(
-    #     [window[idx - 1] * alpha + (1 - alpha) * val for idx, val in enumerate(window[1:], start=1)]
-    # )
-    # transformed.extend(
-    #     [window[idx - 1] * alpha + (1 - alpha) * window[idx] for idx in range(start=1, stop=len(window))]
-    # )
-
-    # return np.array(transformed)
 
 
-@jit
+@njit
 def mean_helper(val_1, val_2, alpha):
     return (val_1 * alpha) + (val_2 * (1 - alpha))
 
-@jit
+
+@njit
 def behavioral_sequence(window):
     s_0 = np.sum(window[:-1] - window[0]) + 0.5 * (window[-1] - window[0])
     return s_0
 
 
-@jit
+@njit
 def behavioral_sequence_ratio(window, offset_1=1e-32, offset_2=1.0):
-    # v - vref / math.abs(vref)
-    # math.abs(x - y)/(math.abs(x) + math.abs(y))/2, (0, 0) = 0
     # This assumes window is composed only of nonnegative numbers
     s_0 = np.sum((window[:-1] + offset_2) / (window[0] + offset_2)) + 0.5 * ((window[-1] + offset_2) / (window[0] + offset_2))
-    # s_0 = ((0.5 * window[-1] + offset_2) / (0.5 * window[0] + offset_2))
-    # for item in window[:-1]:
-    #     if item != 0.0 or window[0] != 0.0:
-
     return s_0
 
 
-@jit
+@njit
 def behavioral_sequence_ratio_2(window):
     """ """
     head = window[0]
-    # s_0 = 0.5 * (window[-1] - head) / (np.abs(window[-1]) + np.abs(head))
     s_0 = 0.5 * (window[-1] - head + 1) / (0.5 * (np.abs(window[-1]) + np.abs(head) + 1))
     for item in window[:-1]:
         if item != 0.0 or window[0] != 0.0:
@@ -142,19 +121,19 @@ def behavioral_sequence_ratio_2(window):
     return s_0
 
 
-@jit
+@njit
 def grey_incidence_degree(val_1, val_2, c=3.0):
     num = 1.0 + abs(val_1) + abs(val_2)
     return num / (num + c * abs(val_1 - val_2))
     # return 1 / ( 1.0 + 0.01 * abs(val_1 - val_2)/val_1)
 
 
-@jit
+@njit
 def grey_incidence_degree_ratio(val_1, val_2, c=1.0):
     return 1.0 / (1.0 + c * abs(val_1 - val_2))
 
 
-@jit
+@njit
 def get_rolling_window(obs, idx, n):
     """ Get window of size n with idx being start (inclusive)."""
     # this can be either way, we look forward but can look back
