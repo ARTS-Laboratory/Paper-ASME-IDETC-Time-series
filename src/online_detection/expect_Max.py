@@ -190,7 +190,7 @@ def update_means(probs, inverse, density, inverse_density, events):
 @jit
 def variance_helper(probs, events, mean):
     """ """
-    return np.dot(probs, np.asarray(np.square(events - mean)))
+    return np.dot(probs, np.square(events - mean))
 
 
 @jit
