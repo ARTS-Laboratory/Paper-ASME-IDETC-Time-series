@@ -1,6 +1,10 @@
 import itertools
+import matplotlib.collections
+
 import numpy as np
+
 from matplotlib import pyplot as plt
+from matplotlib.patches import Rectangle
 
 from utils import metrics
 
@@ -77,23 +81,29 @@ def raw_histogram(time, data, shock_intervals, non_shock_intervals, title=True):
     return fig
 
 
-def plot_shock_helper(interval, color, alpha, ax=None):
-    if ax is None:
-        ax = plt.gca()
-    # [ax.axvspan(start, end, facecolor=color, alpha=alpha) for start, end in interval]
-    for start, end in interval:
-        ax.axvspan(start, end, facecolor=color, alpha=alpha)
+def plot_shock_helper(ax, interval, color, alpha):
+    """ Helper function to plot shading rectangles as collection.
+
+        :param plt.Axes ax: Axes to plot rectangles.
+        :param List[tuple[float, float]] interval: Iterable of tuples containing start and stop times.
+        :param str color: Color of rectangles.
+        :param float alpha: Transparency of rectangles.
+    """
+    ax.add_collection(matplotlib.collections.PatchCollection(
+        (Rectangle((start, 0), stop - start, 1.0) for start, stop in interval),
+        alpha=alpha, facecolor=color, transform=ax.get_xaxis_transform()))
 
 
 def plot_shock(time, data, shock_intervals, non_shock_intervals, title=True):
     fig = plt.figure(figsize=(6.5, 2), layout='compressed')
     # Plot acceleration
     plt.plot(time, data, color='black')
-    # Shade regions
-    plot_shock_helper(shock_intervals, 'red', 0.3)
-    plot_shock_helper(non_shock_intervals, 'blue', 0.3)
-    # Setting plot details
     plt.xlim((time[0], time[-1]))
+    ax = plt.gca()
+    # Shade regions
+    plot_shock_helper(ax=ax, interval=shock_intervals, color='red', alpha=0.3)
+    plot_shock_helper(ax=ax, interval=non_shock_intervals, color='blue', alpha=0.3)
+    # Setting plot details
     plt.xlabel('time (s)')
     plt.ylabel('acceleration (m/s\u00b2)')
     if title:
@@ -112,8 +122,9 @@ def plot_shock_w_mean_std(time, data, shock_intervals, non_shock_intervals):
     plt.plot(time, means + devs, ':', color='black')
     plt.plot(time, means - devs, ':', color='black')
     # Shade regions
-    plot_shock_helper(shock_intervals, 'red', 0.3)
-    plot_shock_helper(non_shock_intervals, 'blue', 0.3)
+    ax = plt.gca()
+    plot_shock_helper(ax, shock_intervals, 'red', 0.3)
+    plot_shock_helper(ax, non_shock_intervals, 'blue', 0.3)
     # Setting plot details
     plt.xlim((time[0], time[-1]))
     plt.xlabel('time (s)')
