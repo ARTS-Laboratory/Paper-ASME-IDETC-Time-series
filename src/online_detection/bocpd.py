@@ -407,7 +407,6 @@ def get_bocpd(
                 non_shocks.append((time[begin], time[idx]))
             begin = idx
             shock = not shock
-            attack = False
     print(f'Total changepoints: {cps} vs {cps_2}, max idx: {max(maxes)}')
     if shock:
         shocks.append((time[begin], time[-1]))
@@ -468,7 +467,6 @@ def get_bocpd_windowed(time, data, mu, kappa, alpha, beta, lamb,
                     total_non_shocks.append((time[begin], time[jdx]))
                 begin = jdx
                 shock = not shock
-                attack = False
     print(f'Total changepoints: {cps} vs {cps_2}, max idx: {max(maxes)}')
     if shock:
         total_shocks.append((time[begin], time[-1]))
