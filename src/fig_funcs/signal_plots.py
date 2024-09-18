@@ -1,4 +1,4 @@
-from scipy.fft import fft, fftfreq
+from scipy.fft import rfft, rfftfreq
 from scipy.signal import periodogram
 import matplotlib.pyplot as plt
 
@@ -22,8 +22,8 @@ def plot_signal(time, data, ms=False, fig_size=None):
 
 
 def plot_signal_fft(time, data):
-    dft = fft(data)
-    freq = fftfreq(len(data), d=1/metrics.sampling_frequency(time))
+    dft = rfft(data)
+    freq = rfftfreq(len(data), d=1 / metrics.sampling_frequency(time))
     fig = plt.figure()
     plt.semilogy(freq, dft)
     return fig
