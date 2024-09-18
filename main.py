@@ -299,14 +299,23 @@ def plot_grey_model(time, data, show_progress=False, save_root=None):
     shock_intervals_gen, non_shock_intervals_gen = get_grey_model_from_generator(
         time, np.abs(data), window_size=window_size, c=c, c_ratio=10.0,
         with_progress=show_progress)
-    gen_fig = plot_shock(time, data, shock_intervals_gen, non_shock_intervals_gen)
-    # plt.savefig('figures/5-14-2024/grey_model.png', dpi=350)
+    gen_fig = plot_shock(
+        time, data, shock_intervals_gen, non_shock_intervals_gen)
+    plt.savefig(Path(save_dir, 'grey_model_rel_dist.png'), dpi=350)
+    # Evaluation stuff
+    (true_shocks, true_nonshocks) = make_ground_truth(time, data)
+    pred = intervals_to_dense_arr(time, shock_intervals_gen, non_shock_intervals_gen)
+    ground = convert_interval_indices_to_full_arr(true_shocks, true_nonshocks, len(time))
+    print_scores(time, ground, pred)
     print('Grey Systems Modelling')
     shock_intervals, non_shock_intervals = get_grey_model(
         time, np.abs(data), window_size=window_size, c=c, c_ratio=c_ratio,
         with_progress=show_progress)
     fig = plot_shock(time, data, shock_intervals, non_shock_intervals)
-    plt.savefig('figures/5-21-2024/grey_model.png', dpi=350)
+    plt.savefig(Path(save_dir, 'grey_model.png'), dpi=350)
+    # Evaluation stuff
+    pred = intervals_to_dense_arr(time, shock_intervals, non_shock_intervals)
+    print_scores(time, ground, pred)
 
 
 def plot_nonparametric_model(time, data, show_progress=False, save_root=None):
