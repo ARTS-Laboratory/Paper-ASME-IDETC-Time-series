@@ -9,9 +9,9 @@ def plot_signal(time, data, ms=False, fig_size=None):
     fig = plt.figure(layout='constrained') if fig_size is None else plt.figure(figsize=fig_size, layout='constrained')
     ylabel = 'acceleration (m/s\u00b2)'
     if ms:
-        xlabel = 'time (\u03bcs)'
-        plt.plot(time * 100, data)
-        plt.xlim([100 * time[0], 100 * time[-1]])
+        xlabel = 'time (ms)'
+        plt.plot(time * 1000, data)
+        plt.xlim([1000 * time[0], 1000 * time[-1]])
     else:
         xlabel = 'time (s)'
         plt.plot(time, data)
@@ -88,8 +88,8 @@ def signal_with_inset_axes(time, data, ms=True):
     # Plots for whole signal
     ylabel = 'acceleration (m/s\u00b2)'
     if ms:
-        xlabel = 'time (\u03bcs)'
-        plot_time = time * 100
+        xlabel = 'time (ms)'
+        plot_time = time * 1_000
     else:
         xlabel = 'time (s)'
         plot_time = time
