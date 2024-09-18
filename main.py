@@ -114,22 +114,24 @@ def plot_offline_detections(time, data, save_root=None):
 
 
 def make_ground_truth(time, data):
-    """"""
-    pass
+    """ Calculates ground truth and returns indices for intervals"""
     shocks, nonshocks = list(), list()
     num_bkps = 2
     bkps = binary_segmentation.get_breaks(np.abs(data), num_bkps, model_type='rank')
     begin = 0
     shocked = False
-    n_bkps = len(bkps)
-    for bkp in bkps:
-        if bkp != n_bkps:
-            if shocked:
-                shocks.append(begin, bkp + 1)
-            else:
-                nonshocks.append(begin, bkp + 1)
-            shocked = not shocked
-            begin = bkp
+    print(f'number of breakpoints: {len(bkps)}')
+    for bkp in bkps[:-1]:
+        if shocked:
+            shocks.append((begin, bkp + 1))
+        else:
+            nonshocks.append((begin, bkp + 1))
+        shocked = not shocked
+        begin = bkp
+    if shocked:
+        shocks.append((begin, bkps[-1]))
+    else:
+        nonshocks.append((begin, bkps[-1]))
     return shocks, nonshocks
 
     # binary_segmentation.plot_breaks(data, bkps)
