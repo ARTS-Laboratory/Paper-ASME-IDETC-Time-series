@@ -174,7 +174,7 @@ def get_nonparametric_model_from_generator(
     # Instantiating variables
     shocks = [] if shock_intervals is None else shock_intervals
     non_shocks = [] if non_shock_intervals is None else non_shock_intervals
-    my_data = np.abs(data)
+    my_data = data
     begin = 0
     shock = False
     attacks, not_attacks = 0, 0
