@@ -1013,7 +1013,9 @@ def get_bocpd_windowed(time, data, mu, kappa, alpha, beta, lamb,
                 # cp = probabilities_2[0]
                 run_length, accumulator, mu, kappa, alpha, beta = update_no_attack_v5(
                     event, run_length, cp, accumulator, mu, kappa, alpha, beta)
-            attack_prob = calculate_prior(event, alpha, beta, mu, kappa) > 0.001  # < 0.1
+            attack_probs = calculate_prior(event, alpha, beta, mu, kappa) * probabilities
+            attack_prob = attack_probs.sum() < 0.001
+            # attack_prob = calculate_prior(event, alpha, beta, mu, kappa) < 0.1
             if attack_prob:
                 cps_2 += 1
             if attack_prob:
