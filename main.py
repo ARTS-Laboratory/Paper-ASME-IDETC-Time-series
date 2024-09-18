@@ -263,8 +263,11 @@ def plot_expectation_maximization(time, data, show_progress=False, save_root=Non
     print(np.mean(my_data[200_000:400_000]))
     print(np.std(my_data[200_000:400_000]))
     mean_2, var_2 = 20.0, 10.0
-    safe = np.random.normal(mean_1, math.sqrt(var_1), 70)
-    unsafe = np.random.normal(mean_2, math.sqrt(var_2), 30)
+    rng = np.random.default_rng()
+    safe = rng.normal(mean_1, math.sqrt(var_1), 70)
+    unsafe = rng.normal(mean_2, math.sqrt(var_2), 30)
+    # safe = np.random.normal(mean_1, math.sqrt(var_1), 70)
+    # unsafe = np.random.normal(mean_2, math.sqrt(var_2), 30)
     shock_intervals_gen, non_shock_intervals_gen = get_expectation_maximization_model_from_generator(
         time, safe, unsafe, data, mean_1=mean_1, var_1=var_1,
         epochs=50, with_progress=show_progress)
