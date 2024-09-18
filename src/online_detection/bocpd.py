@@ -926,25 +926,37 @@ def get_bocpd(
     items = tqdm(enumerate(my_data), total=len(my_data)) if with_progress else enumerate(my_data)
     accumulator = 0.0
     attack = False
+    alpha_hat, beta_hat, kappa_hat, mu_hat = alpha, beta, kappa, mu
     for idx, event in items:
         probabilities = calculate_probabilities(
-            idx, event, alpha, beta, mu, kappa, probabilities, lamb)
+            idx, event, alpha_hat, beta_hat, mu_hat, kappa_hat, probabilities, lamb)
         max_idx = find_max_cp(probabilities)
         maxes.append(max_idx)
-        if maxes[idx + 1] < maxes[idx]:  # if max_idx == 0:
+        if maxes[-1] < maxes[-2]:  # maxes[idx + 1] < maxes[idx]:  # if max_idx == 0:
             # event is an attack
             run_length, accumulator = update_attack_v4(event)
             cps += 1
             attack = True
+            alpha_hat, beta_hat, kappa_hat, mu_hat = alpha, beta, kappa, mu
         else:
             # update
             cp = probabilities[0]
-            run_length, accumulator, mu, kappa, alpha, beta = update_no_attack_v5(
-                event, run_length, cp, accumulator, mu, kappa, alpha, beta)
-        attack_prob = calculate_prior(event, alpha, beta, mu, kappa) > 0.001  # < 0.1
+            run_length, accumulator, mu_hat, kappa_hat, alpha_hat, beta_hat = update_no_attack_v5(
+                event, run_length, cp, accumulator, mu_hat, kappa_hat, alpha_hat, beta_hat)
+        # I think this is the probability of seeing this point given prior
+        # If it's not likely then it must be an attack
+        attack_probs = calculate_prior(event, alpha, beta, mu, kappa) * probabilities
+        attack_prob = attack_probs.sum() < 0.001
+        # if attack: # if an attack happened, do the append and reset probability vector
+        #     attack = False
+        #     if shock:
+        #         shocks.append((time[begin], time[idx]))
+        #     else:
+        #         non_shocks.append((time[begin], time[idx]))
+        #     begin = idx
+        #     shock = not shock
         if attack_prob:
             cps_2 += 1
-        if attack_prob:
             if shock:
                 shocks.append((time[begin], time[idx]))
             else:
