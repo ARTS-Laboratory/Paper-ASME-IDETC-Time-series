@@ -178,10 +178,12 @@ def get_cusum_revised(time, data, num_samples, shock_intervals=None, non_shock_i
             non_shocks.append((time[begin], time[i - 1]))
             begin = i
             shock = True
+            cusum = 0.0
         elif (cusum < cusum_prev+1.5) and shock:
             shocks.append((time[begin], time[i - 1]))
             begin = i
             shock = False
+            cusum = 0.0
         cusum_prev = cusum
     # Check if remaining segment is shock or not
     if shock:
@@ -189,36 +191,6 @@ def get_cusum_revised(time, data, num_samples, shock_intervals=None, non_shock_i
     else:
         non_shocks.append((time[begin], time[-1]))
     return shocks, non_shocks
-
-
-def old_get_cusum(times, data, num_samples, shock_intervals=None, non_shock_intervals=None):
-    """ """
-    shocks = [] if shock_intervals is None else shock_intervals
-    non_shocks = [] if non_shock_intervals is None else non_shock_intervals
-    cusum = 0
-    cusum_prev = 0
-    shock = 0
-    begin = 0
-    n = 1
-    avg = 0
-    # Variables instantiated
-    for i in range(num_samples):
-        avg = ((avg * (n - 1)) + np.abs(data[i])) / n
-        cusum += np.abs(data[i]) - avg
-        n += 1
-        if (cusum > cusum_prev+1.5) and shock==0:
-            non_shock_intervals.append((times[begin], times[i-1]))
-            begin = i
-            shock = 1
-        elif (cusum < cusum_prev+1.5) and shock==1:
-            shock_intervals.append((times[begin], times[i-1]))
-            begin = i
-            shock = 0
-        cusum_prev = cusum
-    if shock:
-        shock_intervals.append((times[begin], times[times.__len__()-1]))
-    else:
-        non_shock_intervals.append((times[begin], times[times.__len__()-1]))
 
 
 def get_plot_cusum(file_path):
