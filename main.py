@@ -6,6 +6,7 @@ from fig_funcs import rupture_changepoint_plots
 from fig_funcs.detection_plots import plot_shock, interval_histogram, raw_histogram
 from fig_funcs.signal_plots import plot_signal, plot_signal_fft, plot_signal_power_spectrum, signal_with_overlays, \
     power_spectra_sections, signal_with_inset_axes
+from fig_funcs.spectrogram_plots import get_spectrogram, plot_spectrogram
 from offline_detection import bottom_up, binary_segmentation, dynamic_programming
 from online_detection.bocpd import bayesian_online_changepoint_detection, bayesian_online_changepoint_detection_v2, \
     get_plot_bocpd, get_bocpd, get_bocpd_windowed
@@ -80,10 +81,22 @@ def make_signal_plots(time, data, save_root=None):
     # return normal_fig, normal_fft_fig
 
 
+def make_spectrogram_plots(time, data, save_root=None):
+    """ Make spectrogram figures for data."""
+    save_dir = save_path(save_root)
+    sxx, times, freqs = get_spectrogram(time, data)
+    plot_spectrogram(sxx, times, freqs, to_ms=True, to_db=True)
+    plt.savefig(Path(save_dir, 'spectrogram.pdf'))
+    plt.savefig(Path(save_dir, 'spectrogram.png'), dpi=350)
+    plt.close()
+
+
 def plot_signals(file_path):
     """ """
-    plt.close('all')
-    make_signal_plots(file_path)
+    my_data = get_data(file_path)
+    time, data = my_data[:, 0], my_data[:, 1]
+    make_signal_plots(time, data)
+    make_spectrogram_plots(time, data)
 
 
 
