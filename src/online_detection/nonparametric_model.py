@@ -1,11 +1,22 @@
 import math
-from math import sqrt
-
 import scipy.stats
-from tqdm import tqdm
-from scipy.stats import rankdata
-from src.online_detection.grey_systems_model import get_rolling_window, accumulation_sequence, mean_sequence
+
 import numpy as np
+
+from math import sqrt
+from scipy.stats import rankdata
+from tqdm import tqdm
+
+from src.utils import metrics
+from src.online_detection.grey_systems_model import get_rolling_window, accumulation_sequence, mean_sequence
+
+
+def window_to_factors(window):
+    """ Return array of metrics from window."""
+    funcs = [
+        metrics.crest_factor, metrics.shape_factor, metrics.impulse_factor,
+        metrics.abs_mean, metrics.rms, metrics.skewness, metrics.kurtosis]
+    return np.array([func(window) for func in funcs])
 
 
 def test_statistic(r_value, n, crit_value=1.965):
