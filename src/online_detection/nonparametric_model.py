@@ -132,38 +132,53 @@ def nonparametric_model(data, window_size=1, alpha=0.5, crit_value=1.965):
 
 def nonparametric_model_generator(data, window_size=1, alpha=0.5, crit_value=1.965):
     """ """
+    # neg_crit, pos_crit = -1.64, 1.64
+    neg_crit, pos_crit = -1.96, 1.96
+    # neg_crit, pos_crit = -1.99, 1.96
     cps = 0
-    attack = False
-    attacks = 0
+    attacks, z_attacks, a_attacks = 0, 0, 0
+    too_many_zeros = 0
     t_crit = 0.975
+    half_of_ranks = (window_size * (window_size + 1)) / 2
     window_1 = get_rolling_window(data, 0, window_size)
-    x_1 = accumulation_sequence(window_1)
+    x_1 = accumulation_sequence(np.abs(window_1)) # todo remove the abs after this test
     z_1 = mean_sequence(x_1, alpha=alpha)
+    # a_1 = window_to_factors(window_1)
     for idx in range(0, len(data) - window_size):
-        if idx == 250_000:
-            print('middle!')
         window_2 = get_rolling_window(data, idx, window_size)
-        x_2 = accumulation_sequence(window_2)
+        x_2 = accumulation_sequence(np.abs(window_2)) # todo remove the abs after this test
         z_2 = mean_sequence(x_2, alpha=alpha)
-        if np.all(z_1 == z_2):
+        # a_2 = window_to_factors(window_2)
+        if np.all(window_1 == window_2):
             attack_likely = False
         else:
+            window_diff = np.around(window_1 - window_2, decimals=3)
+            nonzeros = np.count_nonzero(window_diff)
+            if nonzeros <= window_size // 4:
+                too_many_zeros += 1
             # r_val, n = r_func(z_1, z_2)
             # t_val = test_statistic(r_val, n)
             # attack_likely = t_val <= crit_value
             # r_val_2, n = rank_func_2(z_1, z_2)
             # t_val_2 = test_statistic(r_val_2, n)
-            # attack_likely = t_val_2 <= crit_value
-            t, p_value = scipy.stats.wilcoxon(z_1 - z_2)
-            if t > t_crit:
-                attacks += 1
-            attack_likely = t > t_crit
-            # t_val_3 = test_statistic_2(z_1, z_2, window_size)
-            # attack_likely = t_val_3 > crit_value
+            # # attack_likely = t_val_2 <= crit_value
+            # res = scipy.stats.wilcoxon(np.around(window_1 - window_2, decimals=3), zero_method='zsplit', method='approx')
+            # attack_likely = not (res.zstatistic <= neg_crit or res.zstatistic > pos_crit)
+            # if attack_likely:
+            #     attacks += 1
+            z_res = scipy.stats.wilcoxon(np.around(z_1 - z_2, decimals=3), zero_method='zsplit', method='approx')
+            if not (z_res.zstatistic <= neg_crit or z_res.zstatistic > pos_crit):
+                z_attacks += 1
+            attack_likely = z_res.zstatistic <= neg_crit or z_res.zstatistic > pos_crit
+            # a_res = scipy.stats.wilcoxon(np.around(a_1 - a_2, decimals=3), zero_method='zsplit', method='approx')
+            # if not (a_res.zstatistic <= neg_crit or a_res.zstatistic > pos_crit):
+            #     a_attacks += 1
+            # attack_likely = (a_res.zstatistic <= neg_crit or a_res.zstatistic > pos_crit)
         if attack_likely:
             cps += 1
         yield attack_likely
-    print(attacks)
+    print(f'Times wilcoxon z score test: {attacks}, wilcoxon z transform z score test: {z_attacks}, metric score test: {a_attacks}')
+    print(f'Times we had too many zeros in array: {too_many_zeros}')
     print(cps)
 
 
