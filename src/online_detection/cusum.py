@@ -110,50 +110,94 @@ def cusum_alg(time, data, mean, std_dev, h, alpha, shock_intervals=None, non_sho
     cp, cn, d, mu = [0], [0], [0], [data[0]]
     begin = 0
     shock = False
-    # mu = None
     h_val = h * std_dev
     variance = std_dev**2
-    # values = (data - mean) / std_dev
-    accumulator = data[0]
+    accumulator = 0.0
+    d = 0
+    scalar, weight_no_diff = 1 + alpha * 0.5, alpha / variance
     for idx, event in enumerate(data[1:], start=1):
         # Continue updating mean
         accumulator += event
         mean_p = accumulator / (idx + 1)
 
-        weight = alpha * d[idx - 1] / variance
-        cp.append(max(0, cp[idx - 1] + weight * (event - d[idx - 1] - alpha * d[idx - 1] * 0.5)))
-        cn.append(max(0, cn[idx - 1] - weight * (event + d[idx - 1] + alpha * d[idx - 1] * 0.5)))
-        # d.append(mu[idx - 1] - mean)  # Original: get difference
-        # d.append(max(0, np.abs(mu[idx - 1] - mean)))  # most current, absolute diff
-        d.append(mu[idx - 1] - mean_p)  # Based on accumulator, use updated mean
-        mu.append(alpha * mu[idx - 1] - (1 - alpha) * event)
-        # mu.append(alpha * mu[idx - 1] - (1 - alpha) * event)
-        # # d.append(mu[idx - 1] - mean)
-        # d.append(max(0, np.abs(mu[idx - 1] - mean)))
-        # weight = alpha * d[idx] / variance
-        # cp.append(max(0, cp[idx - 1] + weight * (event - d[idx] - alpha * d[idx] * 0.5)))
-        # cn.append(max(0, cn[idx - 1] - weight * (event + d[idx] + alpha * d[idx] * 0.5)))
-        # attack_likely = (cp[idx] > h or cn[idx] > h)
-        attack_likely = (cp[idx] > h_val or cn[idx] > h_val)
+        weight = d * weight_no_diff
+        cp.append(max(0, cp[-1] + weight * (event - d * scalar)))
+        cn.append(min(0, cn[-1] - weight * (event + d * scalar)))
+        d = mu[-1] - mean  # mean_p
+        mu.append((1 - alpha) * mu[idx - 1] + alpha * event)
+        # check if likely
+        attack_likely = (cp[idx] > h_val or cn[idx] < -h_val)
+        # if attack_likely:
+        #     cp[idx], cn[idx] = 0, 0
+        #     if shock:
+        #         shocks.append((time[begin], time[idx - 1]))
+        #     else:
+        #         non_shocks.append((time[begin], time[idx - 1]))
+        #     begin = idx
+        #     shock = not shock
+        # old style marking
         if attack_likely:
             cp[idx], cn[idx] = 0, 0
-            if shock:
-                shocks.append((time[begin], time[idx - 1]))
-            else:
-                non_shocks.append((time[begin], time[idx - 1]))
+        if attack_likely and not shock:
+            # event is an attack
+            non_shocks.append((time[begin], time[idx - 1]))
             begin = idx
-            shock = not shock
-        # old style marking
-        # if attack_likely and not shock:
+            shock = True
+        elif not attack_likely and shock:
+            shocks.append((time[begin], time[idx - 1]))
+            begin = idx
+            shock = False
+    # Check if remaining segment is shock or not
+    if shock:
+        shocks.append((time[begin], time[-1]))
+    else:
+        non_shocks.append((time[begin], time[-1]))
+    return shocks, non_shocks
+
+
+def cusum_alg_v1(time, data, mean, std_dev, h, alpha, shock_intervals=None, non_shock_intervals=None):
+    """ """
+    # Instantiating variables
+    shocks = [] if shock_intervals is None else shock_intervals
+    non_shocks = [] if non_shock_intervals is None else non_shock_intervals
+    cp, cn, d, mu = [0], [0], [0], [data[0]]
+    begin = 0
+    shock = False
+    h_val = h * std_dev
+    variance = std_dev ** 2
+    for idx, event in enumerate(data[1:], start=1):
+        prev_mu = mu[-1]
+        dev_shift = (prev_mu - mean) / variance
+        mean_mean = (alpha * prev_mu + mean) * 0.5
+        target = prev_mu + mean_mean
+        mu.append(alpha * prev_mu - (1 - alpha) * event)
+        cp.append(max(0, cp[-1] + dev_shift * (event - target)))
+        cn.append(min(0, cn[-1] - dev_shift * (event + target)))
+        # cp.append(max(0, cp[-1] + dev_shift * (event - prev_mu - mean_mean)))
+        # cn.append(min(0, cn[-1] - dev_shift * (event + prev_mu + mean_mean)))
+        # Check if attack occurred
+        attack_likely = (cp[idx] >= h_val or cn[idx] <= -h_val)
+        # if attack_likely:
         #     cp[idx], cn[idx] = 0, 0
-        #     # event is an attack
-        #     non_shocks.append((time[begin], time[idx - 1]))
+        #     section = (time[begin], time[idx - 1])
+        #     if shock:
+        #         shocks.append(section)
+        #     else:
+        #         non_shocks.append(section)
         #     begin = idx
-        #     shock = True
-        # elif not attack_likely and shock:
-        #     shocks.append((time[begin], time[idx - 1]))
-        #     begin = idx
-        #     shock = False
+        #     shock = not shock
+        # old style marking
+        if attack_likely:
+            cp[idx], cn[idx] = 0, 0
+        if attack_likely and not shock:
+            # event is an attack
+            non_shocks.append((time[begin], time[idx - 1]))
+            begin = idx
+            shock = True
+        elif not attack_likely and shock:
+            shocks.append((time[begin], time[idx - 1]))
+            begin = idx
+            shock = False
     # Check if remaining segment is shock or not
     if shock:
         shocks.append((time[begin], time[-1]))
