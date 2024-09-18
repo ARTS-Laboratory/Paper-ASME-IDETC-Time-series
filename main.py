@@ -272,14 +272,22 @@ def plot_expectation_maximization(time, data, show_progress=False, save_root=Non
         time, safe, unsafe, data, mean_1=mean_1, var_1=var_1,
         epochs=50, with_progress=show_progress)
     fig_gen = plot_shock(time, data, shock_intervals_gen, non_shock_intervals_gen)
-    plt.savefig('figures/5-14-2024/expectation_maximization_generator_fig.png', dpi=350)
+    plt.savefig(Path(save_dir, 'expectation_maximization_generator_fig.png'), dpi=350)
     plt.close(fig_gen)
-    shock_intervals, non_shock_intervals = get_expectation_max(
-        time, safe, unsafe, data, mean_1=mean_1, var_1=var_1,
-        epochs=100, with_progress=show_progress)
-    fig = plot_shock(time, data, shock_intervals, non_shock_intervals)
-    plt.savefig('figures/5-14-2024/expectation_maximization_fig.png', dpi=350)
-    plt.close(fig)
+    # Evaluation stuff
+    (true_shocks, true_nonshocks) = make_ground_truth(time, data)
+    pred = intervals_to_dense_arr(time, shock_intervals_gen, non_shock_intervals_gen)
+    ground = convert_interval_indices_to_full_arr(true_shocks, true_nonshocks, len(time))
+    print_scores(time, ground, pred)
+    # shock_intervals, non_shock_intervals = get_expectation_max(
+    #     time, safe, unsafe, data, mean_1=mean_1, var_1=var_1,
+    #     epochs=100, with_progress=show_progress)
+    # fig = plot_shock(time, data, shock_intervals, non_shock_intervals)
+    # plt.savefig(Path(save_dir, 'expectation_maximization_fig.png'), dpi=350)
+    # plt.close(fig)
+    # Evaluation stuff
+    # pred = intervals_to_dense_arr(time, shock_intervals, non_shock_intervals)
+    # print_scores(time, ground, pred)
 
 
 def plot_grey_model(time, data, show_progress=False, save_root=None):
