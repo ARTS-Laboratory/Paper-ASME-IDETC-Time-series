@@ -155,9 +155,8 @@ def print_scores(time, ground, predictions):
     precision = sklearn.metrics.precision_score(ground, predictions)
     recall = sklearn.metrics.recall_score(ground, predictions)
     accuracy = sklearn.metrics.accuracy_score(ground, predictions)
-    dice_similarity = 1.0 - scipy.spatial.distance.dice(ground, predictions)
     # Print scores
-    print(f'F1 score: {f1_score:.3f}, Precision: {precision:.3f}, Recall: {recall:.3f}, Accuracy: {accuracy:.3f}, Dice similarity: {dice_similarity:.3f}')
+    print(f'F1 score: {f1_score:.3f}, Precision: {precision:.3f}, Recall: {recall:.3f}, Accuracy: {accuracy:.3f}')
     # Print confusion matrix
     # confusion = sklearn.metrics.confusion_matrix(ground, predictions)
     confusion = sklearn.metrics.confusion_matrix(ground, predictions, normalize='all')
