@@ -165,8 +165,11 @@ def print_scores(time, ground, predictions):
     # Price is right score
     # todo we might need to assert that this is not empty before doing indexing, otherwise might break
     true_positive_indices = np.logical_and(ground.astype(bool), predictions.astype(bool))
-    earliest_correct = time[true_positive_indices][0]
-    print(f'Shock first correctly detected at time: {earliest_correct}')
+    if true_positive_indices.any():
+        earliest_correct = time[true_positive_indices][0]
+        print(f'Shock first correctly detected at time: {earliest_correct}')
+    else:
+        print('No predictions aligned with ground truth.')
 
 
 def make_ground_truth(time, data):
