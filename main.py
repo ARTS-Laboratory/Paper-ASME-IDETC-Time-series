@@ -4,6 +4,7 @@ import cProfile
 import sklearn.metrics
 
 import numpy as np
+import pandas as pd
 
 from pathlib import Path
 from matplotlib import pyplot as plt
@@ -128,6 +129,23 @@ def plot_offline_detections(time, data, save_root=None):
     plt.savefig(Path(save_dir, 'ground_truth_fig.pdf'))
     plt.savefig(Path(save_dir, 'ground_truth_fig.png'), dpi=350)
     plt.close(ground_truth_fig)
+
+
+def write_metric_table(time, ground, predictions, algorithm_name, signal_name):
+    """ """
+    ids = (('algorithm', [algorithm_name]), ('signal_id', [signal_name]))
+    metric_dict = dict(ids)
+    metric_names = ('accuracy', 'precision', 'recall', 'F1 score', 'detection delay')
+    metric_funcs = (
+        sklearn.metrics.accuracy_score, sklearn.metrics.precision_score,
+        sklearn.metrics.recall_score, sklearn.metrics.f1_score)
+    metrics = {
+        metric_name: [metric_func(ground, predictions)] for
+        metric_name, metric_func in zip(metric_names, metric_funcs)}
+    metric_dict.update(metrics)
+    df = pd.DataFrame(metric_dict)
+    print(df)
+    return df
 
 
 def print_scores(time, ground, predictions):
