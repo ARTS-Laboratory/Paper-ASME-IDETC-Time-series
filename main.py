@@ -98,13 +98,13 @@ def make_spectrogram_plots(time, data, save_root=None):
     plt.close()
 
 
-def plot_signals(file_path):
+def plot_signals(file_path, save_root=None):
     """ """
+    save_dir = save_path(save_root)
     my_data = get_data(file_path)
     time, data = my_data[:, 0], my_data[:, 1]
-    make_signal_plots(time, data)
-    make_spectrogram_plots(time, data)
-
+    make_signal_plots(time, data, save_root=save_dir)
+    make_spectrogram_plots(time, data, save_root=save_dir)
 
 
 def plot_offline_detections(time, data, save_root=None):
