@@ -791,7 +791,7 @@ def get_bocpd_windowed(time, data, mu, kappa, alpha, beta, lamb,
     for idx in itr:
         # shocks, non_shocks = get_bocpd(
         #     time, data[idx: idx + window_size], mu, kappa, alpha, beta, lamb)
-        probabilities = np.asarray([1.0])
+        probabilities = np.array([1.0])
         maxes = [0]
         accumulator = 0.0
         for jdx, event in enumerate(my_data[idx:idx + window_size], start=idx):
