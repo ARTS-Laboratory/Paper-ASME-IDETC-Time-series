@@ -15,56 +15,12 @@ from online_detection.normal_inverse_gamma import NormalInverseGammaRunLength, N
 from utils.read_data import get_data
 
 
-def bayesian_online_changepoint_detection(data, mu, kappa, alpha, beta, lamb):
-    """ """
-    my_data = np.asarray(data)
-    ref_p_1, ref_p_2 = 0, 0
-    run_length = 1  # Iterations since last changepoint
-    maxes = list()
-    prev_probabilities = list()
-    probabilities = np.asarray([1])
-    # x_bars = list()
-    attacks = list()
-    for idx, event in enumerate(my_data):
-        prior = calculate_prior(event, alpha, beta, mu, kappa)
-        hazard = hazard_function(lamb)
-        non_cp = calculate_non_cp(probabilities[0:idx], prior, hazard)
-        cp = calculate_cp(probabilities[0:idx], prior, hazard)
-        new_probabilities = np.array([cp, *non_cp])
-        prev_probabilities.append(probabilities)
-        probabilities = new_probabilities
-        probabilities = normalize_probs(probabilities)
-        max_idx = find_max_cp(probabilities)
-        maxes.append(max_idx)
-        if maxes[idx] < maxes[idx - 1]:
-            # event is an attack
-            # num += 1
-            # chngpnt.append(idx)
-            ref_p_1 = idx
-            # x_bars.append(event)
-            run_length = 1
-        else:
-            # update
-            run_length += 1  # rl.append(rl[idx - 1] + 1)
-            ref_p_2 = idx + 1
-            x_bar = (1 - cp) * np.mean(my_data[ref_p_1:ref_p_2]) + event * cp
-            # sum_3 += (event - mu)**2
-            # x_bars.append(x_bar)
-            mu = (kappa * mu + x_bar) / (kappa + 1)
-            kappa += 1
-            alpha += 0.5
-            beta += kappa * (event - x_bar) ** 2 / (2 * (kappa + 1))
-        attacks.append(calculate_prior(event, alpha, beta, mu, kappa) < 0.1)
-    return attacks
-
-
-# def bayesian_online_changepoint_detection_v2(data, mu, kappa, alpha, beta, lamb):
+# def bayesian_online_changepoint_detection(data, mu, kappa, alpha, beta, lamb):
 #     """ """
 #     my_data = np.asarray(data)
 #     ref_p_1, ref_p_2 = 0, 0
 #     run_length = 1  # Iterations since last changepoint
 #     maxes = list()
-#     attacks = list()
 #     prev_probabilities = list()
 #     probabilities = np.asarray([1])
 #     accumulator = 0
@@ -134,70 +90,6 @@ def bayesian_online_changepoint_detection(data, mu, kappa, alpha, beta, lamb):
 #         attack_threshold=0.1):
 #     """ """
 #     maxes = [0]
-#     for idx, event in data:
-#         probabilities = calculate_probabilities(
-#             idx, event, alpha, beta, mu, kappa, probabilities, lamb)
-#         max_idx = find_max_cp(probabilities)
-#         maxes.append(max_idx)
-#         if maxes[idx + 1] < maxes[idx]:  # if max_idx == 0:
-#             # event is an attack
-#             run_length, accumulator = update_attack_v4(event)
-#             # cps += 1
-#             attack = True
-#         else:
-#             # update
-#             cp = probabilities[0]
-#             run_length, accumulator, mu, kappa, alpha, beta = update_no_attack_v5(
-#                 event, run_length, cp, accumulator, mu, kappa, alpha, beta)
-#         attack_prob = calculate_prior(event, alpha, beta, mu, kappa) > 0.001  # < 0.1
-#         yield attack_prob
-
-
-def bayesian_online_changepoint_detection_v5(data, mu, kappa, alpha, beta, lamb):
-    """ """
-    print('New bocpd alg')
-    my_data = np.asarray(data)
-    run_length = 1  # Iterations since last changepoint
-    # todo make a queue with only two elements allowed
-    maxes = [0]
-    probabilities = np.asarray([1.0])
-    accumulator = 0.0
-    cps, cps_2 = 0, 0
-    alpha_arr, beta_arr, mu_arr, kappa_arr = np.array([alpha]), np.array([beta]), np.array([mu]), np.array([kappa])
-    for idx, event in enumerate(my_data):
-        probabilities = calculate_probabilities_v2(event, alpha_arr, beta_arr, mu_arr, kappa_arr, probabilities, lamb)
-        max_idx = find_max_cp(probabilities)
-        maxes.append(max_idx)
-        if maxes[-1] < maxes[-2]:
-            # event is an attack
-            # Update count
-            cps += 1
-            # reset run length and accumulator
-            run_length, accumulator = update_attack_v4(event)
-            # reset params
-            probabilities = np.asarray([1.0])
-            maxes = [0]
-            alpha_arr, beta_arr, mu_arr, kappa_arr = np.array([alpha]), np.array([beta]), np.array([mu]), np.array([kappa])
-        else:
-            # update
-            cp = probabilities[0]
-            run_length, accumulator, alpha_arr, beta_arr, mu_arr, kappa_arr = update_no_attack_arr(
-                event, run_length, cp, accumulator, alpha_arr, beta_arr, mu_arr, kappa_arr, alpha, beta, mu, kappa)
-        # I think this is the probability distribution of the run length
-        attack_probs = calculate_prior_arr(event, alpha_arr, beta_arr, mu_arr, kappa_arr)
-        attack_prob, no_attack_prob = attack_probs[0], attack_probs[1:].sum()
-        if attack_prob > no_attack_prob:
-            cps_2 += 1
-    print(f'Number of changepoints vs predicted: {cps} vs {cps_2}')
-
-
-# def bayesian_online_changepoint_detection_v5_generator(data, mu, kappa, alpha, beta, lamb):
-#     """ """
-#     print('New bocpd alg')
-#     my_data = np.asarray(data)
-#     run_length = 1  # Iterations since last changepoint
-#     is_attack = False
-#     maxes = deque((0,), maxlen=2)
 #     probabilities = np.asarray([1.0])
 #     accumulator = 0.0
 #     cps, cps_2 = 0, 0
@@ -321,17 +213,6 @@ def bayesian_online_changepoint_detection_deque_generator(data, mu, kappa, alpha
             run_length, accumulator = update_no_attack_deque(
                 event, run_length, accumulator, parameters, alpha, beta, mu, kappa)
         yield is_attack
-
-
-# @jit
-# def calculate_probabilities_inplace(idx, event, alpha, beta, mu, kappa, probabilities, lamb):
-#     """ """
-#     prior = calculate_prior(event, alpha, beta, mu, kappa)
-#     hazard = hazard_function(lamb)
-#     calculate_probs_helper_3(probabilities, prior, hazard, idx)
-#     # Add 1 because the size of the array grew
-#     normalize_probs_inplace(probabilities, idx + 1)
-#     return 0
 
 
 @njit
@@ -474,88 +355,12 @@ def calculate_probs_helper(probs, prior, hazard, arr):
     arr *= prior
 
 
-# @jit
-# def calculate_probs_helper_2(probs, prior, hazard):
-#     """ Calculate the new probabilities in-place"""
-#     arr = np.empty(shape=(len(probs) + 1))
-#     arr[1:] = probs * prior * (1 - hazard)
-#     arr[0] = np.sum(probs * prior * hazard)
-#     return arr
-
-
-# @jit
-# def calculate_normalize_probs_helper(probs, prior, hazard):
-#     """ Calculate the new probabilities in-place"""
-#     arr = np.zeros(shape=(len(probs) + 1))
-#     arr[1:] = probs * prior * (1 - hazard)
-#     arr[0] = np.sum(probs * prior * hazard)
-#     total = np.sum(arr)
-#     if total != 0:
-#         return arr * (1 / total)
-#     return arr
-
-
-# @jit
-# def calculate_probs_helper_3(probs, prior, hazard, idx):
-#     """ Calculate the new probabilities in-place."""
-#     total = np.sum(probs[0:idx])
-#     probs[1:idx + 1] = probs[0:idx] * (1 - hazard)
-#     probs[0] = total * hazard
-#     probs[0:idx + 1] *= prior
-
-
-# @jit
-# def update_attack(idx):
-#     """ """
-#     # event is an attack
-#     ref_p_1_p = idx
-#     run_length_p = 1
-#     return run_length_p, ref_p_1_p
-
-
 def update_attack_v4(event):
     """ """
     # event is an attack
     accum = event
     run_length_p = 1
     return run_length_p, accum
-
-
-# @jit
-# def update_no_attack(
-#         data, idx, run_length, cp, ref_p_1, ref_p_2,
-#         mu, kappa, alpha, beta):
-#     """ """
-#     # update
-#     event = data[idx]
-#     run_length_p = run_length + 1
-#     ref_p_2_p = idx + 1
-#     kappa_p = kappa + 1
-#     alpha_p = alpha + 0.5
-#     x_bar = (1 - cp) * np.mean(data[ref_p_1:ref_p_2_p]) + event * cp
-#     mu_p = (kappa * mu + x_bar) / kappa_p  # (kappa_hat * mu_hat + x_bar) / (kappa_hat + 1)
-#     beta_p = beta + kappa * np.square(event - x_bar) / (
-#                 2 * kappa_p)  # beta_hat + kappa_hat * (event - x_bar) ** 2 / (2 * (kappa_hat + 1))
-#     return run_length_p, ref_p_2_p, mu_p, kappa_p, alpha_p, beta_p
-
-
-# @jit
-# def update_no_attack_v4(
-#         data, idx, run_length, cp, accumulator,
-#         mu, kappa, alpha, beta):
-#     """ """
-#     # update
-#     run_length_p = run_length + 1
-#     kappa_p = kappa + 1
-#     alpha_p = alpha + 0.5
-#     event = data[idx]
-#     new_accumulator = event + accumulator
-#     x_bar = (1 - cp) * (new_accumulator / run_length_p) + event * cp
-#     mu_p = (kappa * mu + x_bar) / kappa_p
-#     # mu_p = cp * event + ((x_bar + run_length * mu_hat) * (1 - cp))/(run_length_p)# (kappa_hat * mu_hat + x_bar) / kappa_p  # (kappa_hat * mu_hat + x_bar) / (kappa_hat + 1)
-#     beta_p = beta + kappa * np.square(event - x_bar) / (
-#                 2 * kappa_p)  # beta_hat + kappa_hat * (event - x_bar) ** 2 / (2 * (kappa_hat + 1))
-#     return run_length_p, new_accumulator, mu_p, kappa_p, alpha_p, beta_p
 
 
 @njit
@@ -616,10 +421,6 @@ def update_no_attack_arr(event, run_length, cp, accumulator, alpha_arr, beta_arr
     kappa_p[0] = kappa
     alpha_p[0] = alpha
     beta_p[0] = beta
-    # mu_p = np.concatenate(((mu,), mu_p))
-    # kappa_p = np.concatenate(((kappa,), kappa_p))
-    # alpha_p = np.concatenate(((alpha,), alpha_p))
-    # beta_p = np.concatenate(((beta,), beta_p))
     return run_length_p, new_accumulator, alpha_p, beta_p, mu_p, kappa_p
 
 
