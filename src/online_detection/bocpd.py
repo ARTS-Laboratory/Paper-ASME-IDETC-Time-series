@@ -656,9 +656,10 @@ def get_bocpd(
 def get_bocpd_windowed(time, data, mu, kappa, alpha, beta, lamb,
                        window_size=1, with_progress=False):
     total_shocks, total_non_shocks = list(), list()
-    itr = tqdm(range(0, len(data), window_size), total=len(data) // window_size) if with_progress else range(0,
-                                                                                                             len(data),
-                                                                                                             window_size)
+    if with_progress:
+        itr = tqdm(range(0, len(data), window_size), total=len(data) // window_size)
+    else:
+        range(0, len(data), window_size)
     begin = 0
     shock = False
     cps, cps_2 = 0, 0
@@ -666,7 +667,6 @@ def get_bocpd_windowed(time, data, mu, kappa, alpha, beta, lamb,
     maxes = [0]
     accumulator = 0
     attack = False
-    probabilities = np.asarray([1.0])
     my_data = np.abs(np.asarray(data))
     mu = np.mean(my_data[:100])
     for idx in itr:
