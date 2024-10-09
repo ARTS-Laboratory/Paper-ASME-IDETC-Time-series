@@ -8,7 +8,7 @@ import pandas as pd
 
 from pathlib import Path
 from matplotlib import pyplot as plt
-from scipy.spatial.distance import dice
+from more_itertools import sliding_window
 
 import utils
 from fig_funcs import rupture_changepoint_plots
@@ -346,7 +346,8 @@ def plot_grey_model(time, data, show_progress=False, save_root=None):
 
 def plot_nonparametric_model(time, data, show_progress=False, save_root=None):
     """ """
-    window_size, crit_value = 100, 1.965
+    save_dir = save_path(save_root)
+    window_size, crit_value = 60, 1.965
     shock_intervals_gen, non_shock_intervals_gen = get_nonparametric_model_from_generator(
         time, data, window_size, crit_value=crit_value, with_progress=show_progress)
     fig = plot_shock(time, data, shock_intervals_gen, non_shock_intervals_gen)
@@ -363,7 +364,6 @@ def plot_nonparametric_model(time, data, show_progress=False, save_root=None):
 def plot_detections(file_path, save_root=None):
     """ """
     save_dir = save_path(save_root)
-    # save_dir = Path('figures', '2024-09-03', 'signal-1')
     my_data = get_data(file_path).astype('float32')
     time, data = my_data[:, 0], my_data[:, 1]
     # DNI
@@ -371,13 +371,7 @@ def plot_detections(file_path, save_root=None):
     # dni_abs_hist = interval_histogram(time, data, dni_shock, dni_non_shock)
     # dni_abs_hist = raw_histogram(time, data, dni_shock, dni_non_shock)
     # BOCPD
-    # plot_bocpd(time, data, True)
-    # bocpd_shock, bocpd_non_shock, bocpd_fig = get_plot_bocpd(file_path, with_progress=True)
-    # cusum_abs_hist = interval_histogram(time, data, cusum_shock, cusum_non_shock)
-    # bocpd_raw_hist = raw_histogram(time, data, bocpd_shock, bocpd_non_shock)
-    # plt.savefig('figures/bocpd_fig.png', dpi=350)
-    # _, _, dni_fig = get_plot_dni(file_path)
-    # plt.savefig('figures/dni_fig.jpg', dpi=350)
+    plot_bocpd(time, data, True, save_root=save_dir)
     # CUSUM
     # plot_cusum(time, data, True)
     # cusum_shock, cusum_non_shock, cusum_fig = get_plot_cusum(file_path)
@@ -388,20 +382,63 @@ def plot_detections(file_path, save_root=None):
     # plt.savefig('figures/cusum_fig.png', dpi=350)
     # plt.savefig('figures/cusum_alg_fig.jpg', dpi=350)
     # EM
-    # plot_expectation_maximization(time, data, True)
-    # em_shock, em_non_shock, exp_max_fig = get_plot_expectation_maximization(file_path, True)
-    # em_abs_hist = interval_histogram(time, data, em_shock, em_non_shock)
-    # em_abs_hist = raw_histogram(time, data, em_shock, em_non_shock)
-    # plt.savefig('figures/expectation_maximization_fig.png', dpi=350)
+    plot_expectation_maximization(time, data, True, save_root=save_dir)
     # Grey Systems
-    plot_grey_model(time, data, True)
-    # grey_shock, grey_non_shock, grey_fig = get_plot_grey_model(file_path, with_progress=True)
-    # grey_fig = plot_shock(time, data, grey_shock, grey_non_shock)
-    # grey_abs_hist = interval_histogram(time, data, grey_shock, grey_non_shock)
-    # grey_abs_hist = raw_histogram(time, data, grey_shock, grey_non_shock)
-    # plt.savefig('', dpi=350)
+    plot_grey_model(time, data, True, save_root=save_dir)
     # Nonparametric
-    plot_nonparametric_model(time, data, True)
+    plot_nonparametric_model(time, data, True, save_root=save_dir)
+    # Estimated Ground Truth
+    # bkps = binary_segmentation.get_breaks(np.abs(data), 2, model_type='rank')
+    # ground_fig = plot_breaks(data, bkps, show=False)
+    # plt.savefig(Path(save_dir, 'ground_plot.png'), dpi=350)
+
+
+def data_transformations(data):
+    """ """
+    bkps = binary_segmentation.get_breaks(np.abs(data), 2, model_type='rank')
+    # code for different data transformations
+    n_bins = 256
+    left_data, right_data = data[:bkps[0]], data[bkps[0]:bkps[1]]
+    raw_fig = plot_metric_histogram(left_data, right_data, num_bins=n_bins)
+    abs_fig = plot_metric_histogram(np.abs(left_data), np.abs(right_data), num_bins=n_bins)
+
+    window_size = 100
+    # windows = np.array(list(sliding_window(data, window_size)))
+    windows = np.array(list(sliding_window(np.abs(np.ediff1d(data)), window_size)))
+    window_itr = np.nditer(windows)
+    abs_arr = np.array([utils.metrics.abs_mean(window) for window in windows])
+    abs_fig = plot_metric_histogram(abs_arr[:bkps[0]], abs_arr[bkps[0]:bkps[1]])
+    rms_arr = np.array([utils.metrics.rms(window) for window in windows])
+    rms_fig = plot_metric_histogram(rms_arr[:bkps[0]], rms_arr[bkps[0]:bkps[1]])
+    skew_arr = np.array([utils.metrics.skewness(window) for window in windows])
+    skewness_fig = plot_metric_histogram(skew_arr[:bkps[0]], skew_arr[bkps[0]:bkps[1]])
+    kurtosis_arr = np.array([utils.metrics.kurtosis(window) for window in windows])
+    kurtosis_fig = plot_metric_histogram(kurtosis_arr[:bkps[0]], kurtosis_arr[bkps[0]:bkps[1]])
+    crest_arr = np.array([utils.metrics.crest_factor(window) for window in windows])
+    crest_fig = plot_metric_histogram(crest_arr[:bkps[0]], crest_arr[bkps[0]:bkps[1]])
+    impulse_arr = np.array([utils.metrics.impulse_factor(window) for window in windows])
+    impulse_fig = plot_metric_histogram(impulse_arr[:bkps[0]], impulse_arr[bkps[0]:bkps[1]])
+    shape_arr = np.array([utils.metrics.shape_factor(window) for window in windows])
+    shape_fig = plot_metric_histogram(shape_arr[:bkps[0]], shape_arr[bkps[0]:bkps[1]])
+    # peaked_arr = np.array([np.max(np.abs(window))/utils.metrics.rms(window) for window in windows])
+    # peaked_fig = plot_metric_histogram(peaked_arr[:bkps[0]], peaked_arr[bkps[0]:bkps[1]])
+    # simp_arr = np.array([np.mean(np.abs(window)) + np.var(window) for window in windows])
+    # simple_fig = plot_metric_histogram(simp_arr[:bkps[0]], simp_arr[bkps[0]:bkps[1]])
+    # scalar = 1_000
+    # rolling = np.array([np.var(np.ediff1d(window))/np.sqrt(np.mean(np.abs(window))) for window in windows])
+    # rolling *= scalar
+    # rolling_fig = plot_metric_histogram(rolling[:bkps[0]], rolling[bkps[0]:bkps[1]])
+    # range_arr = np.array([np.max(window) - np.min(window) for window in windows])
+    # range_fig = plot_metric_histogram(range_arr[:bkps[0]], range_arr[bkps[0]:bkps[1]])
+    # iq_range_arr = np.array([scipy.stats.iqr(window) for window in windows])
+    # iq_range_fig = plot_metric_histogram(iq_range_arr[:bkps[0]], iq_range_arr[bkps[0]:bkps[1]])
+
+
+def plot_metric_histogram(left_data, right_data, num_bins=32):
+    fig, ax = plt.subplots(ncols=2, sharey=True)
+    ax[0].hist(left_data, bins=num_bins)
+    ax[1].hist(right_data, bins=num_bins)
+    return fig
 
 
 def profile():
@@ -420,8 +457,9 @@ def main():
     # make_signal_overlay_plot(time, data, save_root=save_dir)
     # make_stacked_power_spectrum_plot(time, data)
     # plt.show()
-    # plot_signals(file_path)
-    plot_detections(file_path, save_dir)
+    # plot_signals(file_path, save_dir)
+    # plot_detections(file_path, save_dir)
+    data_transformations(data)
     plt.show()
 
 
