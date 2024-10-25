@@ -10,7 +10,9 @@ from fig_funcs.detection_plots import plot_shock
 from utils.read_data import read_data_from_file
 
 
-def cusum(time, data, mean, sigma, alpha, beta, shock_intervals=None, non_shock_intervals=None):
+def cusum(
+        time, data, mean, sigma, alpha, beta, shock_intervals=None,
+        non_shock_intervals=None):
     """ """
     # Instantiating variables
     shocks = [] if shock_intervals is None else shock_intervals
@@ -73,7 +75,9 @@ def cusum(time, data, mean, sigma, alpha, beta, shock_intervals=None, non_shock_
     return shocks, non_shocks
 
 
-def simple_cusum(time, data, mean, std_dev, k=1, h=5, shock_intervals=None, non_shock_intervals=None):
+def simple_cusum(
+        time, data, mean, std_dev, k=1, h=5, shock_intervals=None,
+        non_shock_intervals=None):
     """ """
     # Instantiating variables
     shocks = [] if shock_intervals is None else shock_intervals
@@ -102,7 +106,9 @@ def simple_cusum(time, data, mean, std_dev, k=1, h=5, shock_intervals=None, non_
     return shocks, non_shocks
 
 
-def cusum_alg(time, data, mean, std_dev, h, alpha, shock_intervals=None, non_shock_intervals=None):
+def cusum_alg(
+        time, data, mean, std_dev, h, alpha, shock_intervals=None,
+        non_shock_intervals=None):
     """ """
     # Instantiating variables
     shocks = [] if shock_intervals is None else shock_intervals
@@ -117,8 +123,8 @@ def cusum_alg(time, data, mean, std_dev, h, alpha, shock_intervals=None, non_sho
     scalar, weight_no_diff = 1 + alpha * 0.5, alpha / variance
     for idx, event in enumerate(data[1:], start=1):
         # Continue updating mean
-        accumulator += event
-        mean_p = accumulator / (idx + 1)
+        # accumulator += event
+        # mean_p = accumulator / (idx + 1)
 
         weight = d * weight_no_diff
         cp.append(max(0, cp[-1] + weight * (event - d * scalar)))
@@ -127,15 +133,6 @@ def cusum_alg(time, data, mean, std_dev, h, alpha, shock_intervals=None, non_sho
         mu.append((1 - alpha) * mu[idx - 1] + alpha * event)
         # check if likely
         attack_likely = (cp[idx] > h_val or cn[idx] < -h_val)
-        # if attack_likely:
-        #     cp[idx], cn[idx] = 0, 0
-        #     if shock:
-        #         shocks.append((time[begin], time[idx - 1]))
-        #     else:
-        #         non_shocks.append((time[begin], time[idx - 1]))
-        #     begin = idx
-        #     shock = not shock
-        # old style marking
         if attack_likely:
             cp[idx], cn[idx] = 0, 0
         if attack_likely and not shock:
@@ -155,7 +152,31 @@ def cusum_alg(time, data, mean, std_dev, h, alpha, shock_intervals=None, non_sho
     return shocks, non_shocks
 
 
-def cusum_alg_v1(time, data, mean, std_dev, h, alpha, shock_intervals=None, non_shock_intervals=None):
+def cusum_alg_generator(data, mean, std_dev, h, alpha):
+    """ """
+    cp, cn, d, mu = [0], [0], [0], [data[0]]
+    # First point is always True
+    yield True
+    h_val = h * std_dev
+    variance = std_dev**2
+    d = 0
+    scalar, weight_no_diff = 1 + alpha * 0.5, alpha / variance
+    for idx, event in enumerate(data[1:], start=1):
+        weight = d * weight_no_diff
+        cp.append(max(0, cp[-1] + weight * (event - d * scalar)))
+        cn.append(min(0, cn[-1] - weight * (event + d * scalar)))
+        d = mu[-1] - mean  # mean_p
+        mu.append((1 - alpha) * mu[idx - 1] + alpha * event)
+        # check if likely
+        attack_likely = (cp[idx] > h_val or cn[idx] < -h_val)
+        if attack_likely:
+            cp[idx], cn[idx] = 0, 0
+        yield attack_likely
+
+
+def cusum_alg_v1(
+        time, data, mean, std_dev, h, alpha, shock_intervals=None,
+        non_shock_intervals=None):
     """ """
     # Instantiating variables
     shocks = [] if shock_intervals is None else shock_intervals
@@ -177,16 +198,6 @@ def cusum_alg_v1(time, data, mean, std_dev, h, alpha, shock_intervals=None, non_
         # cn.append(min(0, cn[-1] - dev_shift * (event + prev_mu + mean_mean)))
         # Check if attack occurred
         attack_likely = (cp[idx] >= h_val or cn[idx] <= -h_val)
-        # if attack_likely:
-        #     cp[idx], cn[idx] = 0, 0
-        #     section = (time[begin], time[idx - 1])
-        #     if shock:
-        #         shocks.append(section)
-        #     else:
-        #         non_shocks.append(section)
-        #     begin = idx
-        #     shock = not shock
-        # old style marking
         if attack_likely:
             cp[idx], cn[idx] = 0, 0
         if attack_likely and not shock:
@@ -206,7 +217,30 @@ def cusum_alg_v1(time, data, mean, std_dev, h, alpha, shock_intervals=None, non_
     return shocks, non_shocks
 
 
-def get_cusum_revised(time, data, num_samples, shock_intervals=None, non_shock_intervals=None):
+def cusum_alg_v1_generator(data, mean, std_dev, h, alpha):
+    """ """
+    cp, cn, d, mu = [0], [0], [0], [data[0]]
+    # First point is always True
+    yield True
+    h_val = h * std_dev
+    variance = std_dev ** 2
+    for idx, event in enumerate(data[1:], start=1):
+        prev_mu = mu[-1]
+        dev_shift = (prev_mu - mean) / variance
+        mean_mean = (alpha * prev_mu + mean) * 0.5
+        target = prev_mu + mean_mean
+        mu.append(alpha * prev_mu - (1 - alpha) * event)
+        cp.append(max(0, cp[-1] + dev_shift * (event - target)))
+        cn.append(min(0, cn[-1] - dev_shift * (event + target)))
+        # Check if attack occurred
+        attack_likely = (cp[idx] >= h_val or cn[idx] <= -h_val)
+        if attack_likely:
+            cp[idx], cn[idx] = 0, 0
+        yield attack_likely
+
+
+def get_cusum_revised(
+        time, data, num_samples, shock_intervals=None, non_shock_intervals=None):
     """ """
     # Instantiating variables
     shocks = [] if shock_intervals is None else shock_intervals
@@ -235,6 +269,11 @@ def get_cusum_revised(time, data, num_samples, shock_intervals=None, non_shock_i
     else:
         non_shocks.append((time[begin], time[-1]))
     return shocks, non_shocks
+
+
+def get_cusum_from_generator():
+    """ """
+    pass
 
 
 def get_plot_cusum(file_path):
