@@ -437,27 +437,15 @@ def get_expectation_maximization_model_from_generator(
     # Begin algorithm loop
     my_normal_obs, my_abnormal_obs, my_unknowns = np.asarray(normal_obs), np.asarray(abnormal_obs), np.asarray(unknowns)
     if with_progress:
-        em_model_gen = tqdm(enumerate(expectation_maximization_generator(
+        em_model_gen = tqdm(expectation_maximization_generator(
         my_normal_obs, my_abnormal_obs, my_unknowns, mean_1_p, mean_2_p,
-        var_1_p, var_2_p, pi_p, epochs)), total=len(unknowns))
+        var_1_p, var_2_p, pi_p, epochs), total=len(unknowns))
     else:
-        em_model_gen = enumerate(expectation_maximization_generator(
+        em_model_gen = expectation_maximization_generator(
         my_normal_obs, my_abnormal_obs, my_unknowns, mean_1_p, mean_2_p,
-        var_1_p, var_2_p, pi_p, epochs))
-    for idx, is_attack in em_model_gen:
-        if is_attack and not shock:  # If detected attack and not in shock state, change state
-            non_shocks.append((time[begin], time[idx]))
-            shock = True
-            begin = idx
-        elif not is_attack and shock:
-            shocks.append((time[begin], time[idx]))
-            shock = False
-            begin = idx
-    # Check if remaining segment is shock or not
-    if shock:
-        shocks.append((time[begin], time[-1]))
-    else:
-        non_shocks.append((time[begin], time[-1]))
+        var_1_p, var_2_p, pi_p, epochs)
+    shocks, non_shocks = detection_to_intervals_for_generator_v1(
+        time, begin, em_model_gen)
     return shocks, non_shocks
 
 

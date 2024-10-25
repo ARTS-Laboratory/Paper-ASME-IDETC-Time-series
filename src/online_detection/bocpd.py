@@ -554,39 +554,15 @@ def get_bocpd_v5_from_generator(time, data, mu, kappa, alpha, beta, lamb,
     non_shocks = [] if non_shock_intervals is None else non_shock_intervals
     my_data = data  # np.abs(data)
     begin = 0
-    shock = False
-    attacks, not_attacks = 0, 0
-    # This is a generator
-    bocpd_model_gen = bayesian_online_changepoint_detection_v6_generator(my_data, mu, kappa, alpha, beta, lamb)
-    # bocpd_model_gen = bayesian_online_changepoint_detection_deque_generator(my_data, mu, kappa, alpha, beta, lamb)
-    items = tqdm(bocpd_model_gen, total=len(my_data)) if with_progress else bocpd_model_gen
-    for idx, is_attack in enumerate(items):
-        if is_attack:  # if there was a change, we flip state and mark last segment
-            attacks += 1
-            if shock:  # if shock, mark end of shock state
-                shocks.append((time[begin], time[idx]))
-            else:
-                non_shocks.append((time[begin], time[idx]))
-            begin = idx
-            shock = not shock
-        else:
-            not_attacks += 1
-        # if is_attack and not shock:
-        #     non_shocks.append((time[begin], time[idx]))
-        #     shock = True
-        #     begin = idx
-        #     attacks += 1
-        # elif not is_attack and shock:
-        #     shocks.append((time[begin], time[idx]))
-        #     shock = False
-        #     begin = idx
-        #     not_attacks += 1
-    print(f'Safe points: {not_attacks}, change points: {attacks}')
-    # Check if remaining segment is shock or not
-    if shock:
-        shocks.append((time[begin], time[-1]))
+    if with_progress:
+        bocpd_model_gen = tqdm(
+            bayesian_online_changepoint_detection_v6_generator(
+                my_data, mu, kappa, alpha, beta, lamb), total=len(data))
     else:
-        non_shocks.append((time[begin], time[-1]))
+        bocpd_model_gen = bayesian_online_changepoint_detection_v6_generator(
+            my_data, mu, kappa, alpha, beta, lamb)
+    shocks, non_shocks = detection_to_intervals_for_generator_v1(
+        time, begin, bocpd_model_gen)
     return shocks, non_shocks
 
 
