@@ -96,7 +96,7 @@ def mean_sequence(window, alpha=0.5):
 
 @njit
 def behavioral_sequence(window):
-    s_0 = np.sum(window[:-1] - window[0]) + 0.5 * (window[-1] - window[0])
+    s_0 = (window[:-1] - window[0]).sum() + 0.5 * (window[-1] - window[0])
     return s_0
 
 
