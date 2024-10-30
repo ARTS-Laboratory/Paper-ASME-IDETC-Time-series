@@ -7,6 +7,7 @@ from math import sqrt
 from scipy.stats import rankdata
 from tqdm import tqdm
 
+from online_detection.model_helpers import detection_to_intervals_for_generator_v1
 from src.utils import metrics
 from src.online_detection.grey_systems_model import get_rolling_window, accumulation_sequence, mean_sequence
 
@@ -193,25 +194,35 @@ def get_nonparametric_model_from_generator(
     begin = 0
     shock = False
     attacks, not_attacks = 0, 0
-    # This is a generator
-    nonparametric_model_gen = nonparametric_model_generator(my_data, window_size, alpha, crit_value)
-    items = tqdm(nonparametric_model_gen) if with_progress else nonparametric_model_gen
-    for idx, is_attack in enumerate(items, start=window_size):
-        if is_attack and not shock:  # If detected attack and not in shock state, change state
-            non_shocks.append((time[begin], time[idx]))
-            shock = True
-            begin = idx
-            attacks += 1
-        elif not is_attack and shock:
-            shocks.append((time[begin], time[idx]))
-            shock = False
-            begin = idx
-            not_attacks += 1
-        # attack = False
-    print(f'Safe points: {attacks}, change points: {not_attacks}')
-    # Check if remaining segment is shock or not
-    if shock:
-        shocks.append((time[begin], time[-1]))
+    # # This is a generator
+    # nonparametric_model_gen = nonparametric_model_generator(my_data, window_size, alpha, crit_value)
+    # items = tqdm(nonparametric_model_gen, total=len(data)-window_size) if with_progress else nonparametric_model_gen
+    # for idx, is_attack in enumerate(items, start=window_size):
+    #     if is_attack and not shock:  # If detected attack and not in shock state, change state
+    #         non_shocks.append((time[begin], time[idx]))
+    #         shock = True
+    #         begin = idx
+    #         attacks += 1
+    #     elif not is_attack and shock:
+    #         shocks.append((time[begin], time[idx]))
+    #         shock = False
+    #         begin = idx
+    #         not_attacks += 1
+    #     # attack = False
+    # print(f'Safe points: {attacks}, change points: {not_attacks}')
+    # # Check if remaining segment is shock or not
+    # if shock:
+    #     shocks.append((time[begin], time[-1]))
+    # else:
+    #     non_shocks.append((time[begin], time[-1]))
+    if with_progress:
+        nonparametric_model_gen = tqdm(
+            nonparametric_model_generator(
+                my_data, window_size, alpha, crit_value),
+            total=len(data) - window_size)
     else:
-        non_shocks.append((time[begin], time[-1]))
+        nonparametric_model_gen = nonparametric_model_generator(
+            my_data, window_size, alpha, crit_value)
+    shocks, non_shocks = detection_to_intervals_for_generator_v1(
+        time, begin, nonparametric_model_gen, start_offset=window_size)
     return shocks, non_shocks
