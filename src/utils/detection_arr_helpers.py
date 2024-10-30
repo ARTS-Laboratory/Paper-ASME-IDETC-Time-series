@@ -3,11 +3,11 @@ import numpy as np
 
 def convert_interval_indices_to_full_arr(shocks, nonshocks, arr_size):
     """ Converts intervals of indices to filled array"""
-    arr = np.empty(arr_size)
+    arr = np.empty(arr_size, dtype=int)  # cast array to int for binary classification
     for start, end in shocks:
-        arr[start: end] = 1
+        arr[start: end + 1] = 1  # ending index is exclusive
     for start, end in nonshocks:
-        arr[start: end] = 0
+        arr[start: end + 1] = 0  # ending index is exclusive
     return arr
 
 
