@@ -11,6 +11,7 @@ from numba.core.extending import overload
 from tqdm import tqdm
 
 from fig_funcs.detection_plots import plot_shock
+from online_detection.model_helpers import detection_to_intervals_for_generator_v1
 from online_detection.normal_inverse_gamma import NormalInverseGammaRunLength, NormalInverseGamma
 from utils.read_data import get_data
 
