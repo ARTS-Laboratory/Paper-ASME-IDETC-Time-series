@@ -577,50 +577,47 @@ def get_bocpd(
     shock = False
     cps, cps_2 = 0, 0
     run_length = 1  # Iterations since last changepoint
-    maxes = [0]
-    probabilities = np.asarray([1])
+    maxes = deque((0,), maxlen=2)
+    probabilities = np.array([1])
     my_data = np.abs(np.asarray(data))
     mu = np.mean(my_data[:100])
-    items = tqdm(enumerate(my_data), total=len(my_data)) if with_progress else enumerate(my_data)
-    accumulator = 0.0
-    attack = False
-    alpha_hat, beta_hat, kappa_hat, mu_hat = alpha, beta, kappa, mu
-    for idx, event in items:
-        probabilities = calculate_probabilities(
-            idx, event, alpha_hat, beta_hat, mu_hat, kappa_hat, probabilities, lamb)
+    items = tqdm(my_data, total=len(my_data)) if with_progress else my_data
+    for idx, event in enumerate(items):
+        is_attack = False
+        probabilities, alpha_arr, beta_arr, mu_arr, kappa_arr, run_length_arr = calculate_probabilities_v3(event, alpha_arr, beta_arr, mu_arr, kappa_arr, run_length_arr, probabilities, lamb, trunc_threshold=1e-32)
         max_idx = find_max_cp(probabilities)
-        maxes.append(max_idx)
-        if maxes[-1] < maxes[-2]:  # maxes[idx + 1] < maxes[idx]:  # if max_idx == 0:
+        maxes.append(run_length_arr[max_idx])
+        if maxes[-1] < maxes[0]:
             # event is an attack
-            run_length, accumulator = update_attack_v4(event)
+            # Update count
             cps += 1
-            attack = True
-            alpha_hat, beta_hat, kappa_hat, mu_hat = alpha, beta, kappa, mu
+            # reset run length and accumulator
+            run_length, accumulator = update_attack_v4(event)
+            # alpha_arr, beta_arr, mu_arr, kappa_arr = np.concatenate([[alpha], alpha_arr]), np.concatenate([[beta], beta_arr]), np.concatenate([[mu], mu_arr]), np.concatenate([[kappa], kappa_arr])
+            # reset params
+            probabilities = np.asarray([probabilities.sum()])
+            run_length_arr = np.asarray([0], dtype=np.uint32)
+            # maxes = [0]
+            alpha_arr, beta_arr, mu_arr, kappa_arr = np.array([alpha]), np.array([beta]), np.array([mu]), np.array([kappa])
         else:
             # update
             cp = probabilities[0]
-            run_length, accumulator, mu_hat, kappa_hat, alpha_hat, beta_hat = update_no_attack_v5(
-                event, run_length, cp, accumulator, mu_hat, kappa_hat, alpha_hat, beta_hat)
-        # I think this is the probability of seeing this point given prior
-        # If it's not likely then it must be an attack
-        attack_probs = calculate_prior(event, alpha, beta, mu, kappa) * probabilities
-        attack_prob = attack_probs.sum() < 0.001
-        # if attack: # if an attack happened, do the append and reset probability vector
-        #     attack = False
-        #     if shock:
-        #         shocks.append((time[begin], time[idx]))
-        #     else:
-        #         non_shocks.append((time[begin], time[idx]))
-        #     begin = idx
-        #     shock = not shock
-        if attack_prob:
-            cps_2 += 1
-            if shock:
-                shocks.append((time[begin], time[idx]))
-            else:
-                non_shocks.append((time[begin], time[idx]))
+            run_length, accumulator, alpha_arr, beta_arr, mu_arr, kappa_arr = update_no_attack_arr(
+                event, run_length, cp, accumulator, alpha_arr, beta_arr, mu_arr, kappa_arr, alpha, beta, mu, kappa)
+        # # I think this is the probability distribution of the run length
+
+        attack_probs = calculate_prior_arr(event, alpha_arr, beta_arr, mu_arr, kappa_arr)
+        attack_probs *= probabilities
+        val_prob = attack_probs.sum()
+        is_attack = val_prob <= 0.05
+        if is_attack and not shock:
+            non_shocks.append((time[begin], time[idx + 1]))
+            shock = True
             begin = idx
-            shock = not shock
+        elif not is_attack and shock:
+            shocks.append((time[begin], time[idx + 1]))
+            shock = False
+            begin = idx
     print(f'Total changepoints: {cps} vs {cps_2}, max idx: {max(maxes)}')
     if shock:
         shocks.append((time[begin], time[-1]))
