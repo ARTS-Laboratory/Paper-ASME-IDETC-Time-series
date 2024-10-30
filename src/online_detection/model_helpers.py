@@ -1,6 +1,7 @@
 
 
-def detection_to_intervals_for_generator_v1(time_vec, begin, model_generator):
+def detection_to_intervals_for_generator_v1(
+        time_vec, begin, model_generator, start_offset=0):
     """ Convert detections from generator to time intervals
 
         This version is for detecting when a measure deviates from expected.
@@ -8,7 +9,7 @@ def detection_to_intervals_for_generator_v1(time_vec, begin, model_generator):
     shock = False
     shocks = list()
     nonshocks = list()
-    for idx, is_change in enumerate(model_generator):
+    for idx, is_change in enumerate(model_generator, start=start_offset):
         if is_change and not shock:
             nonshocks.append((time_vec[begin], time_vec[idx]))
             shock = True
