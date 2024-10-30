@@ -21,24 +21,17 @@ def bayesian_online_changepoint_detection_v6_generator(data, mu, kappa, alpha, b
     my_data = np.asarray(data)
     run_length = 1  # Iterations since last changepoint
     maxes = deque((0,), maxlen=2)
-    run_length_arr = np.asarray([0], dtype=np.uint32)
-    probabilities = np.asarray([1.0])
+    run_length_arr = np.array([0], dtype=np.uint32)
+    probabilities = np.array([1.0])
     accumulator = 0.0
-    cps = 0
     alpha_arr, beta_arr, mu_arr, kappa_arr = np.array([alpha]), np.array([beta]), np.array([mu]), np.array([kappa])
     for idx, event in enumerate(my_data):
-        is_attack = False
         probabilities, alpha_arr, beta_arr, mu_arr, kappa_arr, run_length_arr = calculate_probabilities_v3(event, alpha_arr, beta_arr, mu_arr, kappa_arr, run_length_arr, probabilities, lamb, trunc_threshold=1e-32)
         max_idx = find_max_cp(probabilities)
         maxes.append(run_length_arr[max_idx])
         if maxes[-1] < maxes[0]:
-            is_attack = True
-            # event is an attack
-            # Update count
-            cps += 1
             # reset run length and accumulator
             run_length, accumulator = update_attack_v4(event)
-            # alpha_arr, beta_arr, mu_arr, kappa_arr = np.concatenate([[alpha], alpha_arr]), np.concatenate([[beta], beta_arr]), np.concatenate([[mu], mu_arr]), np.concatenate([[kappa], kappa_arr])
             # reset params
             probabilities = np.asarray([probabilities.sum()])
             run_length_arr = np.asarray([0], dtype=np.uint32)
@@ -49,12 +42,12 @@ def bayesian_online_changepoint_detection_v6_generator(data, mu, kappa, alpha, b
             cp = probabilities[0]
             run_length, accumulator, alpha_arr, beta_arr, mu_arr, kappa_arr = update_no_attack_arr(
                 event, run_length, cp, accumulator, alpha_arr, beta_arr, mu_arr, kappa_arr, alpha, beta, mu, kappa)
-        # # I think this is the probability distribution of the run length
-        # attack_probs = calculate_prior_arr(event, alpha_arr, beta_arr, mu_arr, kappa_arr)
-        # attack_likely = attack_probs.sum() < 0.001
-        # is_attack = attack_probs[0] == np.max(attack_probs)
+        # Calculate probability of change point
+        attack_probs = calculate_prior_arr(event, alpha_arr, beta_arr, mu_arr, kappa_arr)
+        attack_probs *= probabilities
+        val_prob = attack_probs.sum()
+        is_attack = val_prob <= 0.05
         yield is_attack
-    print(f'Number of changepoints: {cps}')
 
 
 def bayesian_online_changepoint_detection_deque_generator(data, mu, kappa, alpha, beta, lamb):
