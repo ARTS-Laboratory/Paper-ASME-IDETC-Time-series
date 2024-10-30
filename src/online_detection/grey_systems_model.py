@@ -76,8 +76,8 @@ def grey_model_generator(data, window_size=1, c=3, c_ratio=300):
 def accumulation_sequence(window):
     """ Return the accumulation over the window."""
     # return np.add.accumulate(window)
-    output = np.cumsum(window)
-    output[-1] = np.sum(window)
+    output = window.cumsum()
+    output[-1] = window.sum()
     return output
 
 
