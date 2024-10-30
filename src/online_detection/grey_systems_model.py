@@ -87,15 +87,11 @@ def mean_sequence(window, alpha=0.5):
     transformed = np.empty_like(window)
     transformed[0] = window[0]
     val = window[0]
-    for idx in range(1, len(window)):
-        val = mean_helper(val, window[idx], alpha)
+    neg_alpha = 1 - alpha
+    for idx, item in enumerate(window[1:]):
+        val = (val * alpha) + (item * neg_alpha)
         transformed[idx] = val
     return transformed
-
-
-@njit
-def mean_helper(val_1, val_2, alpha):
-    return (val_1 * alpha) + (val_2 * (1 - alpha))
 
 
 @njit
