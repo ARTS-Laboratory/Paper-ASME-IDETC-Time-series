@@ -371,14 +371,7 @@ def plot_detections(time, data, save_root=None):
     # BOCPD
     plot_bocpd(time, data, True, save_root=save_dir)
     # CUSUM
-    # plot_cusum(time, data, True)
-    # cusum_shock, cusum_non_shock, cusum_fig = get_plot_cusum(file_path)
-    # cusum_abs_hist = interval_histogram(time, data, cusum_shock, cusum_non_shock)
-    # cusum_abs_hist = raw_histogram(time, data, cusum_shock, cusum_non_shock)
-    # plt.savefig('figures/cusum_revised_fig.png', dpi=350)
-    # plt.savefig('figures/simple_cusum_fig.jpg', dpi=350)
-    # plt.savefig('figures/cusum_fig.png', dpi=350)
-    # plt.savefig('figures/cusum_alg_fig.jpg', dpi=350)
+    plot_cusum(time, data, True, save_root=save_dir)
     # EM
     plot_expectation_maximization(time, data, True, save_root=save_dir)
     # Grey Systems
