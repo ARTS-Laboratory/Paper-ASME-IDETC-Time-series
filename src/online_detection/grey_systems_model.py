@@ -5,6 +5,7 @@ from numba import njit
 from tqdm import tqdm
 
 from fig_funcs.detection_plots import plot_shock
+from online_detection.model_helpers import detection_to_intervals_for_generator_v1
 from utils.read_data import get_data
 
 
@@ -198,31 +199,16 @@ def get_grey_model_from_generator(time, data,  window_size=1, c=3, c_ratio=3, sh
     non_shocks = [] if non_shock_intervals is None else non_shock_intervals
     my_data = np.abs(data)
     begin = 0
-    shock = False
-    attacks, not_attacks = 0, 0
-    # This is a generator
-    grey_model_gen = grey_model_generator(my_data, window_size, c=c, c_ratio=c_ratio)
-    items = tqdm(grey_model_gen) if with_progress else grey_model_gen
-    for idx, is_attack in enumerate(items, start=window_size):
-        # if is_attack:
-        #     attack = True
-        if is_attack and not shock:  # If detected attack and not in shock state, change state
-            non_shocks.append((time[begin], time[idx]))
-            shock = True
-            begin = idx
-            attacks += 1
-        elif not is_attack and shock:
-            shocks.append((time[begin], time[idx]))
-            shock = False
-            begin = idx
-            not_attacks += 1
-        # attack = False
-    print(f'Safe points: {attacks}, change points: {not_attacks}')
-    # Check if remaining segment is shock or not
-    if shock:
-        shocks.append((time[begin], time[-1]))
+    if with_progress:
+        grey_model_gen = tqdm(
+            grey_model_generator(
+                my_data, window_size, c=c, c_ratio=c_ratio),
+            total=len(data)-window_size)
     else:
-        non_shocks.append((time[begin], time[-1]))
+        grey_model_gen = grey_model_generator(
+            my_data, window_size, c=c, c_ratio=c_ratio)
+    shocks, non_shocks = detection_to_intervals_for_generator_v1(
+        time, begin, grey_model_gen, start_offset=window_size)
     return shocks, non_shocks
 
 
