@@ -73,7 +73,7 @@ def grey_model_generator(data, window_size=1, c=3, c_ratio=300):
 
 
 @njit
-def accumulation_sequence(window):
+def accumulation_sequence(window: np.ndarray):
     """ Return the accumulation over the window."""
     # return np.add.accumulate(window)
     output = window.cumsum()
