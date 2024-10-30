@@ -2,7 +2,6 @@
 
 def estimator_prediction(estimator, fitting_data, data):
     """ """
-    # todo finish this function
     estimator.fit(fitting_data[0], fitting_data[1])
     predictions = [estimator.predict(data_point) for data_point in data]
     # for data_point in data:
