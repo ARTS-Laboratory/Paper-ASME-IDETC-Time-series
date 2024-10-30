@@ -361,11 +361,9 @@ def plot_nonparametric_model(time, data, show_progress=False, save_root=None):
 
 
 
-def plot_detections(file_path, save_root=None):
+def plot_detections(time, data, save_root=None):
     """ """
     save_dir = save_path(save_root)
-    my_data = get_data(file_path).astype('float32')
-    time, data = my_data[:, 0], my_data[:, 1]
     # DNI
     # dni_shock, dni_non_shock, dni_fig = get_plot_dni(file_path)
     # dni_abs_hist = interval_histogram(time, data, dni_shock, dni_non_shock)
@@ -458,8 +456,8 @@ def main():
     # make_stacked_power_spectrum_plot(time, data)
     # plt.show()
     # plot_signals(file_path, save_dir)
-    # plot_detections(file_path, save_dir)
-    data_transformations(data)
+    # plot_detections(time, data, save_dir)
+    # data_transformations(data)
     plt.show()
 
 
