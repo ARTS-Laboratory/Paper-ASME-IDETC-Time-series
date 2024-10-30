@@ -626,12 +626,12 @@ def get_bocpd_windowed(time, data, mu, kappa, alpha, beta, lamb,
     if with_progress:
         itr = tqdm(range(0, len(data), window_size), total=len(data) // window_size)
     else:
-        range(0, len(data), window_size)
+        itr = range(0, len(data), window_size)
     begin = 0
     shock = False
     cps, cps_2 = 0, 0
     run_length = 1  # Iterations since last changepoint
-    maxes = [0]
+    maxes = deque((0,), maxlen=2)
     accumulator = 0
     attack = False
     my_data = np.abs(np.asarray(data))
@@ -639,47 +639,46 @@ def get_bocpd_windowed(time, data, mu, kappa, alpha, beta, lamb,
     for idx in itr:
         # shocks, non_shocks = get_bocpd(
         #     time, data[idx: idx + window_size], mu, kappa, alpha, beta, lamb)
+        run_length_arr = np.array([0], dtype=np.uint32)
         probabilities = np.array([1.0])
-        maxes = [0]
+        maxes.clear()
+        maxes.append(0)
         accumulator = 0.0
+        alpha_arr, beta_arr, mu_arr, kappa_arr = np.array([alpha]), np.array([beta]), np.array([mu]), np.array([kappa])
         for jdx, event in enumerate(my_data[idx:idx + window_size], start=idx):
-            # print(f'Accumulator: {accumulator}')
-            # prior = calculate_prior(event, alpha, beta, mu, kappa)
-            probabilities = calculate_probabilities(
-                jdx, event, alpha, beta, mu, kappa, probabilities, lamb)
+            probabilities, alpha_arr, beta_arr, mu_arr, kappa_arr, run_length_arr = calculate_probabilities_v3(
+                event, alpha_arr, beta_arr, mu_arr, kappa_arr, run_length_arr, probabilities, lamb, trunc_threshold=1e-32)
             max_idx = find_max_cp(probabilities)
-            maxes.append(max_idx)
-            # if max_idx < maxes[idx] and max_idx == 0:
-            #     print('discrepancy')
-            if maxes[-1] < maxes[-2]:  # if max_idx == 0:
-                # event is an attack
+            maxes.append(run_length_arr[max_idx])
+            if maxes[-1] < maxes[0]:
+                # a change definitely occurred in the past
                 run_length, accumulator = update_attack_v4(event)
-                cps += 1
-                attack = True
+                # reset params
+                probabilities = np.asarray([probabilities.sum()])
+                run_length_arr = np.asarray([0], dtype=np.uint32)
+                # maxes = [0]
+                alpha_arr, beta_arr, mu_arr, kappa_arr = np.array([alpha]), np.array([beta]), np.array([mu]), np.array([kappa])
             else:
                 # update
                 cp = probabilities[0]
-                # cp = probabilities_2[0]
                 run_length, accumulator, mu, kappa, alpha, beta = update_no_attack_v5(
                     event, run_length, cp, accumulator, mu, kappa, alpha, beta)
-            attack_probs = calculate_prior(event, alpha, beta, mu, kappa) * probabilities
-            attack_prob = attack_probs.sum() < 0.001
-            # attack_prob = calculate_prior(event, alpha, beta, mu, kappa) < 0.1
-            if attack_prob:
-                cps_2 += 1
-            if attack_prob:
-                if shock:
-                    total_shocks.append((time[begin], time[jdx]))
-                else:
-                    total_non_shocks.append((time[begin], time[jdx]))
-                begin = jdx
-                shock = not shock
-    print(f'Total changepoints: {cps} vs {cps_2}, max idx: {max(maxes)}')
+            attack_probs = calculate_prior_arr(event, alpha_arr, beta_arr, mu_arr, kappa_arr)
+            attack_probs *= probabilities
+            val_prob = attack_probs.sum()
+            is_attack = val_prob <= 0.05
+            if is_attack and not shock:
+                total_non_shocks.append((time[begin], time[idx + 1]))
+                shock = True
+                begin = idx
+            elif not is_attack and shock:
+                total_shocks.append((time[begin], time[idx + 1]))
+                shock = False
+                begin = idx
     if shock:
         total_shocks.append((time[begin], time[-1]))
     else:
         total_non_shocks.append((time[begin], time[-1]))
-    # print(f'BOCPD: copy vs inplace close enough: {all(np.isclose(probabilities, probabilities_2))}')
     return total_shocks, total_non_shocks
 
 
