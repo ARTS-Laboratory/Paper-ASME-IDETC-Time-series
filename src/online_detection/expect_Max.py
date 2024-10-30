@@ -3,11 +3,11 @@ import math
 import numpy as np
 
 from line_profiler import profile
-from numba import jit, njit
+from numba import njit
 from typing import List, Optional, Iterable
-from time import perf_counter
 from tqdm import tqdm
 
+from online_detection.model_helpers import detection_to_intervals_for_generator_v1
 from src.fig_funcs.detection_plots import plot_shock
 from src.utils.read_data import get_data
 
@@ -45,14 +45,17 @@ def expectation_maximization(
         # TODO confirm that the following 3 lines are equivalent
         # attack_prob = posterior_probs(data, pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat)
         # inverse = posterior_probs(data, 1 - pi_hat, mu1_hat, sig1_hat, mu2_hat, sig2_hat)
-        attack_prob, inverse = posterior_probs_v2(data, pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat)
+        attack_prob, inverse = posterior_probs_v2(
+            data, pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat)
         # Maximization
         mu1_hat, mu2_hat, sig1_hat, sig2_hat, pi_hat = maximization(
-            data, attack_prob, inverse, mu1_hat, mu2_hat, sig1_hat, sig2_hat, pi_hat, size)
+            data, attack_prob, inverse, mu1_hat, mu2_hat, sig1_hat, sig2_hat,
+            pi_hat, size)
         if close_enough(attack_prob, last_attack_prob):
             break
         last_attack_prob[:] = attack_prob
-    is_attack = posterior_prob(data[-1], pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat) > 0.01
+    is_attack = posterior_prob(
+        data[-1], pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat) > 0.01
     return is_attack, mu1_hat, mu2_hat, sig1_hat, sig2_hat, pi_hat
 
 
@@ -115,7 +118,9 @@ def close_enough(a, b):
 
 
 @njit
-def maximization(data, attack_prob, inverse, mu1_hat, mu2_hat, sig1_hat, sig2_hat, pi_hat, size):
+def maximization(
+        data, attack_prob, inverse, mu1_hat, mu2_hat, sig1_hat, sig2_hat,
+        pi_hat, size):
     """
     """
     density, inverse_density = attack_prob.sum(), inverse.sum()
@@ -131,21 +136,21 @@ def maximization(data, attack_prob, inverse, mu1_hat, mu2_hat, sig1_hat, sig2_ha
     return mu1_hat, mu2_hat, sig1_hat, sig2_hat, pi_hat
 
 
-@njit
-def phi_v2(value, mean, variance):
-    """ Return the probability density function for value.
-
-        :param float value: Value to get function for.
-        :param float mean: Population mean.
-        :param float variance: Population variance.
-        :returns: PDF of value given.
-        :rtype: float
-    """
-    if variance == 0.0:
-        return np.where(value == mean, 1.0, 0.0)
-    ex = np.exp(-0.5*(value - mean)**2/variance)
-    ex /= np.sqrt(variance*2*np.pi)
-    return ex
+# @njit
+# def phi_v2(value, mean, variance):
+#     """ Return the probability density function for value.
+#
+#         :param float value: Value to get function for.
+#         :param float mean: Population mean.
+#         :param float variance: Population variance.
+#         :returns: PDF of value given.
+#         :rtype: float
+#     """
+#     if variance == 0.0:
+#         return np.where(value == mean, 1.0, 0.0)
+#     ex = np.exp(-0.5*(value - mean)**2/variance)
+#     ex /= np.sqrt(variance*2*np.pi)
+#     return ex
 
 
 @njit
@@ -160,32 +165,29 @@ def phi_single(value, mean, variance):
     """
     if variance == 0.0:
         return 1.0 if value == mean else 0.0
-    # sigma = np.sqrt(variance)
     denom = math.sqrt(variance*2*np.pi)
     ex = math.exp(-0.5*(value - mean)**2/variance)
     return ex/denom
 
 
-# @profile
-@njit
-def phi(values, mean, variance):
-    """ Return the probability density function for some values.
-
-        :param ndarray values: Value to get function for.
-        :param float mean: Population mean.
-        :param float variance: Population variance.
-        :returns: PDF of value given.
-        :rtype: float
-    """
-    if variance == 0.0:
-        return np.where(values == mean, 1.0, 0.0)
-    # denom =   # math.sqrt(variance*2*np.pi)
-    ex = values - mean
-    ex **= 2
-    ex *= -0.5 / variance
-    np.exp(ex, ex)
-    # ex = np.exp((values - mean)**2 * (-0.5 / variance))
-    return ex / math.sqrt(variance)
+# # @profile
+# @njit
+# def phi(values, mean, variance):
+#     """ Return the probability density function for some values.
+#
+#         :param ndarray values: Value to get function for.
+#         :param float mean: Population mean.
+#         :param float variance: Population variance.
+#         :returns: PDF of value given.
+#         :rtype: float
+#     """
+#     if variance == 0.0:
+#         return np.where(values == mean, 1.0, 0.0)
+#     ex = values - mean
+#     ex **= 2
+#     ex *= -0.5 / variance
+#     np.exp(ex, ex)
+#     return ex / math.sqrt(variance)
 
 
 # @profile
@@ -202,15 +204,12 @@ def phi_inplace(values, mean, variance, out):
     if variance == 0.0:
         for idx, value in enumerate(values):
             out[idx] = 1.0 if value == mean else 0.0
-        # out[:] = np.where(values == mean, 1.0, 0.0)
         return
-    # denom =   # math.sqrt(variance*2*np.pi)
     out[:] = values
     out -= mean
     out **= 2
     out *= -0.5 / variance
     np.exp(out, out)
-    # ex = np.exp((values - mean)**2 * (-0.5 / variance))
     out /= math.sqrt(variance)
 
 
@@ -235,21 +234,12 @@ def posterior_probs_v2(points, attack_prob, attack_mean, attack_var, normal_mean
     phi_inplace(points, attack_mean, attack_var, num_1)
     # num_1 = phi(points, attack_mean, attack_var)
     num_1 *= attack_prob
-    # new lines
     num_2 = np.empty_like(points)
     phi_inplace(points, normal_mean, normal_var, num_2)
     num_2 *= (1 - attack_prob)
-    # old line
-    # num_2 = phi(points, normal_mean, normal_var) * (1 - attack_prob)
-    # if np.any(num_1 + num_2 == 0.0):
-    #     print('We have a zero')
     denom = num_1 + num_2
     normalize_probs(num_1, num_2, denom)
     return num_1, num_2
-    # denom_nonzero_idx = denom != 0.0
-    # probs = np.where(denom_nonzero_idx, num_1 / denom, num_1)
-    # inverse = np.where(denom_nonzero_idx, num_2 / denom, num_2)
-    # return probs, inverse
 
 
 @njit
