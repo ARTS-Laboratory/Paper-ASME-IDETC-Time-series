@@ -101,9 +101,14 @@ def behavioral_sequence(window):
 
 
 @njit
-def behavioral_sequence_ratio(window, offset_1=1e-32, offset_2=1.0):
+def behavioral_sequence_ratio(window, offset_2=1.0):
     # This assumes window is composed only of nonnegative numbers
-    s_0 = np.sum((window[:-1] + offset_2) / (window[0] + offset_2)) + 0.5 * ((window[-1] + offset_2) / (window[0] + offset_2))
+    # new code
+    s_0 = (window[:-1] + offset_2).sum()
+    s_0 += 0.5 * (window[-1] + offset_2)
+    s_0 /= window[0] + offset_2
+    # old code
+    # s_0 = np.sum((window[:-1] + offset_2) / (window[0] + offset_2)) + 0.5 * ((window[-1] + offset_2) / (window[0] + offset_2))
     return s_0
 
 
