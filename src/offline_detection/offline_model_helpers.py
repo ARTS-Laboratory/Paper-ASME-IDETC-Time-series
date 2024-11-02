@@ -1,11 +1,17 @@
+import numpy as np
 
 
-def estimator_prediction(estimator, fitting_data, data):
+def format_single_feature_data(training_data, data):
+    """ Expand dimension for data with single feature."""
+    reshaped_training = np.expand_dims(training_data, axis=1)
+    reshaped_data = np.expand_dims(data, axis=1)
+    return reshaped_training, reshaped_data
+
+
+def estimator_prediction(estimator, fitting_data, fitting_labels, data):
     """ """
-    estimator.fit(fitting_data[0], fitting_data[1])
-    predictions = [estimator.predict(data_point) for data_point in data]
-    # for data_point in data:
-    #     estimator.predict(data_point)
+    estimator.fit(fitting_data, fitting_labels)
+    predictions = estimator.predict(data)
     return predictions
 
 
