@@ -1,4 +1,6 @@
 import math
+from dataclasses import asdict
+
 import scipy
 import cProfile
 import sklearn.metrics
@@ -10,7 +12,10 @@ from pathlib import Path
 from matplotlib import pyplot as plt
 from more_itertools import sliding_window
 
+import Hyperparameters
 import utils
+
+from DetectionAlgorithm import DetectionAlgorithm
 from fig_funcs import rupture_changepoint_plots
 from fig_funcs.detection_plots import plot_shock, interval_histogram, raw_histogram  # , convert_intervals_to_time_memoized
 from fig_funcs.rupture_changepoint_plots import plot_breaks
@@ -28,6 +33,7 @@ from online_detection.nonparametric_model import get_nonparametric_model_from_ge
 from utils.detection_arr_helpers import convert_interval_indices_to_full_arr, intervals_to_dense_arr
 from utils.matplotlib_formatting import set_rc_params
 from utils.read_data import get_data
+from utils.toml_utils import load_toml
 from utils.write_data import save_path
 
 
@@ -226,8 +232,8 @@ def plot_bocpd(time, data, show_progress=False, ground=None, save_root=None):
     test_fig_1 = plot_shock(time, data, test_shocks, test_nonshocks)
     plt.savefig(Path(save_dir, 'bocpd_fig.png'), dpi=350)
     # # Evaluation stuff
-    # pred = intervals_to_dense_arr(time, test_shocks, test_nonshocks)
-    # print_scores(time, ground, pred)
+    pred = intervals_to_dense_arr(time, test_shocks, test_nonshocks)
+    print_scores(time, ground, pred)
     # bayesian_online_changepoint_detection_v5(np.abs(data), np.mean(np.abs(data[:100])), 0.1, 1, 100, 100)
     test_shocks, test_nonshocks = get_bocpd_v5_from_generator(
         time, data, np.mean(np.abs(data[:100])), 0.1, 0.1, 0.01, 100,
@@ -235,8 +241,8 @@ def plot_bocpd(time, data, show_progress=False, ground=None, save_root=None):
     test_fig_2 = plot_shock(time, data, test_shocks, test_nonshocks)
     plt.savefig(Path(save_dir, 'bocpd_2_fig.png'), dpi=350)
     # # Evaluation stuff
-    # pred = intervals_to_dense_arr(time, test_shocks, test_nonshocks)
-    # print_scores(time, ground, pred)
+    pred = intervals_to_dense_arr(time, test_shocks, test_nonshocks)
+    print_scores(time, ground, pred)
     print('End of test')
     # plt.show()
 
@@ -425,6 +431,148 @@ def data_transformations(data):
     # iq_range_fig = plot_metric_histogram(iq_range_arr[:bkps[0]], iq_range_arr[bkps[0]:bkps[1]])
 
 
+# def run_model(time: np.ndarray, data: np.ndarray, model: DetectionAlgorithm):
+#     """ """
+#     hp = model.hyperparameters
+#     match model.name:
+#         case 'bocpd':
+#             get_bocpd_v5_from_generator(
+#                 time, data, hp['mu'], hp['kappa'], hp['alpha'], hp['beta'],
+#                 hp['lamb'], with_progress=model.show_progress)
+#         case 'expectation maximization':
+#             get_expectation_maximization_model_from_generator(
+#                 time, data, with_progress=model.show_progress)
+#         case 'cusum':
+#             cusum_alg(time, data)
+#         case 'grey':
+#             get_grey_model_from_generator(time, data, with_progress=model.show_progress)
+#         case 'nonparametric':
+#             get_nonparametric_model_from_generator(time, data, with_progress=model.show_progress)
+
+
+def plot_detection_1(time, data, models):
+    """ """
+    #todo save names should be part of config
+    for model in models:
+        match model.name:
+            case 'bocpd':
+                shocks, non_shocks = get_bocpd_v5_from_generator(
+                    time, data, **asdict(model.hyperparameters),
+                    with_progress=model.with_progress)
+                detection_fig = plot_shock(time, data, shocks, non_shocks)
+                plt.savefig(Path(model.save_path, 'bocpd_fig.png'), dpi=350)
+                plt.close(detection_fig)
+            case 'expectation maximization':
+                hp: Hyperparameters.EMHyperparams = model.hyperparameters
+                rng = np.random.default_rng()
+                safe = rng.normal(
+                    hp.normal_mean, math.sqrt(hp.normal_var),
+                    hp.normal_data_size)
+                unsafe = rng.normal(
+                    hp.abnormal_mean, math.sqrt(hp.abnormal_var),
+                    hp.abnormal_data_size)
+                shocks, non_shocks = get_expectation_maximization_model_from_generator(
+                    time, safe, unsafe, data, hp.normal_mean,
+                    hp.abnormal_mean, hp.normal_var, hp.abnormal_var, hp.pi,
+                    hp.epochs, with_progress=model.with_progress)
+                detection_fig = plot_shock(time, data, shocks, non_shocks)
+                plt.savefig(Path(model.save_path, 'expectation_maximization_fig.png'), dpi=350)
+                plt.close(detection_fig)
+            case 'cusum':
+                shocks, non_shocks = cusum_alg(
+                    time, data, **asdict(model.hyperparameters))
+                detection_fig = plot_shock(time, data, shocks, non_shocks)
+                plt.savefig(Path(model.save_path, 'cusum_fig.png'), dpi=350)
+                plt.close(detection_fig)
+            case 'grey':
+                hp: Hyperparameters.GreyHyperparams = model.hyperparameters
+                shocks, non_shocks = get_grey_model_from_generator(
+                    time, data, hp.window_size, hp.critical_value,
+                    hp.critical_ratio_value,
+                    with_progress=model.with_progress)
+                detection_fig = plot_shock(time, data, shocks, non_shocks)
+                plt.savefig(Path(model.save_path, 'grey_fig.png'), dpi=350)
+                plt.close(detection_fig)
+            case 'nonparametric':
+                hp: Hyperparameters.NonparametricHyperparams = model.hyperparameters
+                shocks, non_shocks = get_nonparametric_model_from_generator(
+                    time, data, hp.window_size, hp.alpha, hp.critical_value,
+                    with_progress=model.with_progress)
+                detection_fig = plot_shock(time, data, shocks, non_shocks)
+                plt.savefig(Path(model.save_path, 'nonparametric_fig.png'), dpi=350)
+                plt.close(detection_fig)
+            case _:
+                raise NotImplementedError
+
+
+
+def read_model_config(config_file):
+    """ Parse config file for models."""
+    config_table = load_toml(config_file)
+    default_save_path = save_path(config_table['save-root'])
+    models = config_table['models']
+    algs = list()
+    for model in models:
+        hp = model['hyperparameters']
+        if 'save-path' in model:
+            save_name = save_path(model['save-path'])
+        else:
+            save_name = default_save_path
+        if 'show-progress' in model:
+            with_progress = model['show-progress']
+        else:
+            with_progress = False
+        match model['name']:
+            case 'bocpd':
+                alg = DetectionAlgorithm(
+                    name=model['name'], with_progress=with_progress,
+                    save_path=save_name,
+                    hyperparameters=Hyperparameters.BOCPDHyperparams(
+                        alpha=hp['alpha'], beta=hp['beta'], mu=hp['mu'],
+                        kappa=hp['kappa'], lamb=hp['lambda']))
+            case 'expectation maximization':
+                alg = DetectionAlgorithm(
+                    name=model['name'], with_progress=with_progress,
+                    save_path=save_name,
+                    hyperparameters=Hyperparameters.EMHyperparams(
+                        normal_data_size=hp['normal-data-size'],
+                        abnormal_data_size=hp['abnormal-data-size'],
+                        normal_mean=hp['normal-mean'],
+                        abnormal_mean=hp['abnormal-mean'],
+                        normal_var=hp['normal-variance'],
+                        abnormal_var=hp['abnormal-variance'],
+                        pi=hp['pi'], epochs=hp['epochs']))
+            case 'cusum':
+                alg = DetectionAlgorithm(
+                    name=model['name'], with_progress=with_progress,
+                    save_path=save_name,
+                    hyperparameters=Hyperparameters.CUSUMHyperparams(
+                        mean=hp['mean'], std_dev=hp['standard-deviation'], h=hp['h'],
+                        alpha=hp['alpha']))
+            case 'grey':
+                alg = DetectionAlgorithm(
+                    name=model['name'], with_progress=with_progress,
+                    save_path=save_name,
+                    hyperparameters=Hyperparameters.GreyHyperparams(
+                        window_size=hp['window-size'],
+                        critical_value=hp['critical-value'],
+                        critical_ratio_value=hp['critical-ratio-value'],
+                        alpha=hp['alpha']))
+            case 'nonparametric':
+                alg = DetectionAlgorithm(
+                    name=model['name'], with_progress=with_progress,
+                    save_path=save_name,
+                    hyperparameters=Hyperparameters.NonparametricHyperparams(
+                        window_size=hp['window-size'],
+                        critical_value=hp['critical-value'], alpha=hp['alpha']
+                    ))
+            case _:
+                raise NotImplementedError
+        algs.append(alg)
+    return algs
+
+
+
 def plot_metric_histogram(left_data, right_data, num_bins=32):
     fig, ax = plt.subplots(ncols=2, sharey=True)
     ax[0].hist(left_data, bins=num_bins)
@@ -434,6 +582,19 @@ def plot_metric_histogram(left_data, right_data, num_bins=32):
 
 def profile():
     cProfile.run('main()', sort='ncalls')
+
+
+def run_from_config():
+    """ """
+    config_file = './src/configs/first_impact_config.toml'
+    # config_file = './src/configs/matlab_sims_config.toml'
+    config_table = load_toml(config_file)
+    my_data = get_data(config_table['file-path'])
+    # my_data = get_data_from_matlab(config_table['file-path'])
+    time, data = my_data[:, 0], my_data[:, 1]
+    # time, data = my_data[:, 0], my_data[:, 2]
+    algs = read_model_config(config_file)
+    plot_detection_1(time, data, algs)
 
 
 def main():
@@ -455,5 +616,7 @@ def main():
 
 
 if __name__ == '__main__':
+    run_from_config()
+    exit()
     # profile()
     main()

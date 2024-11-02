@@ -1,3 +1,59 @@
 title = "Config 1"
-num_samples = 500000
-file_path = 'Path\to\file.txt'
+num-samples = 500000
+file-path = "Path/to/file.txt"
+save-root = "Path/to/save/root/" # may default to current directory
+
+[[models]]
+name = "bocpd"
+show-progress = true
+save-path = "save/location" # this overwrites save-root for this model
+# Not implemented
+#save-name = "name-to-save-model"
+
+[models.hyperparameters]
+alpha = 50.0 # 1/2 * kappa
+beta = 50.0 # alpha * sample variance
+mu = 0.0 #  sample mean
+kappa =  100.0
+lambda = 100
+
+
+
+[[models]]
+name = "expectation maximization"
+
+[models.hyperparameters]
+normal-mean = 0.0
+normal-variance = 1.0
+abnormal-mean = 20.0
+abnormal-variance = 10.0
+normal-data-size = 70
+abnormal-data-size = 30
+pi = 0.7 # if excluded, read as None
+epochs = 1
+
+[[models]]
+name = "cusum"
+
+[models.hyperparameters]
+mean = 0.0
+standard-deviation = 1.0
+h = 5
+alpha = 0.95
+
+[[models]]
+name = "grey"
+
+[models.hyperparameters]
+window-size = 100
+critical-value = 3
+critical-ratio-value = 0.01
+alpha = 0.5 # weighted average
+
+[[models]]
+name = "nonparametric"
+
+[models.hyperparameters]
+window-size = 60
+critical-value = 1.965
+alpha = 0.5 # weighted average
