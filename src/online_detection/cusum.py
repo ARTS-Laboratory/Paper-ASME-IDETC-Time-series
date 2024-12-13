@@ -27,46 +27,27 @@ def cusum(
     accumulator = data[0]
     for idx, val in enumerate(data[1:], start=1):
         accumulator += val
-        # m_bar.append(beta*m_bar[idx - 1] + (1 - beta) * data[idx])
         m_bar.append(beta * m_bar[idx - 1] - (1 - beta) * val)
         m_bar[0], m_bar[1] = mean, mean
         mean_p = accumulator / (idx + 1)
-        # next_data.append(abs(data[idx] - data[idx - 1]) - m_bar[idx - 1])
-        # These are the original lines
-        # cp.append(max(0, cp[idx - 1] + (alpha*(m_bar[idx] - mean)/sigma**2)*(data[idx]-(m_bar[idx]-mean)-alpha*(m_bar[idx]-mean)*0.5)))
-        # cn.append(max(0, cn[idx - 1] - (alpha*(m_bar[idx] - mean)/sigma**2)*(data[idx]+(m_bar[idx]-mean)+alpha*(m_bar[idx]-mean)*0.5)))
-        # The following  5 lines should be equivalent to the 2 above
-        # diff = m_bar[idx - 1] - mean
         diff = m_bar[idx - 1] - mean_p
         alpha_diff = alpha * diff
         alpha_diff_var, alpha_diff_half = alpha_diff / var, alpha_diff * 0.5
         cp.append(max(0, cp[idx - 1] + alpha_diff_var * (val - diff - alpha_diff_half)))
         cn.append(max(0, cn[idx - 1] - alpha_diff_var * (val + diff + alpha_diff_half)))
-        # End of conversion
-        # attack_likely = (np.abs(cn[idx]) > h or cp[idx] > h)
-
+        # check if change occurred
         attack_likely = (cp[idx] > h or cn[idx] > h)
         if attack_likely:
-            cp[idx], cn[idx] = 0, 0
-            if shock:
-                shocks.append((time[begin], time[idx]))
-            else:
-                non_shocks.append((time[begin], time[idx]))
+            cp[idx] = 0
+            cn[idx] = 0
+        if attack_likely and not shock:
+            non_shocks.append((time[begin], time[idx]))
             begin = idx
-            shock = not shock
-        # if np.abs(cn[idx]) > h or cp[idx] > h:
-        #     cp[idx] = 0
-        #     cn[idx] = 0
-        # if attack_likely and not shock:
-        #     non_shocks.append((time[begin], time[idx - 1]))
-        #     begin = idx
-        #     shock = True
-        # elif not attack_likely and shock:
-        #     shocks.append((time[begin], time[idx - 1]))
-        #     begin = idx
-        #     shock = False
-    # print(m_bar)
-    # print(cp), print(cn)
+            shock = True
+        elif not attack_likely and shock:
+            shocks.append((time[begin], time[idx]))
+            begin = idx
+            shock = False
     # Check if remaining segment is shock or not
     if shock:
         shocks.append((time[begin], time[-1]))
@@ -137,11 +118,11 @@ def cusum_alg(
             cp[idx], cn[idx] = 0, 0
         if attack_likely and not shock:
             # event is an attack
-            non_shocks.append((time[begin], time[idx - 1]))
+            non_shocks.append((time[begin], time[idx]))
             begin = idx
             shock = True
         elif not attack_likely and shock:
-            shocks.append((time[begin], time[idx - 1]))
+            shocks.append((time[begin], time[idx]))
             begin = idx
             shock = False
     # Check if remaining segment is shock or not
@@ -253,12 +234,12 @@ def get_cusum_revised(
         avg = ((avg * i) + np.abs(data[i])) / (i + 1)
         cusum += np.abs(data[i]) - avg
         if (cusum > cusum_prev+1.5) and not shock:
-            non_shocks.append((time[begin], time[i - 1]))
+            non_shocks.append((time[begin], time[i]))
             begin = i
             shock = True
             cusum = 0.0
         elif (cusum < cusum_prev+1.5) and shock:
-            shocks.append((time[begin], time[i - 1]))
+            shocks.append((time[begin], time[i]))
             begin = i
             shock = False
             cusum = 0.0
