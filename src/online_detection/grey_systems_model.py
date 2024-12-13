@@ -73,11 +73,15 @@ def grey_model_generator(data, window_size=1, c=3, c_ratio=300):
         accumulation_sequence_inplace(window_2, x_2)
         mean_sequence_inplace(x_2, z_2, alpha=0.5)
         s_2 = behavioral_sequence(z_2)
-        s_2_ratio = behavioral_sequence_ratio(z_2)
-        s_2_ratio = behavioral_sequence_ratio_2(z_2)
+        # s_2_ratio = behavioral_sequence_ratio(z_2)
+        # s_2_ratio = behavioral_sequence_ratio_2(z_2)
+        s_2_rel_dist = behavior_relative_difference(z_2)
         degree = grey_incidence_degree(s_1, s_2, c=c)
-        degree_ratio = grey_incidence_degree_ratio(s_1_ratio, s_2_ratio, c=c_ratio)
-        attack_likely = degree + degree_ratio <= 0.5
+        # degree_ratio = grey_incidence_degree_ratio(s_1_ratio, s_2_ratio, c=c_ratio)
+        rel_degree = grey_incidence_degree(s_1_rel_dist, s_2_rel_dist, c=c_ratio)
+        # attack_likely = degree <= 0.5 or degree_ratio <= 0.5
+        attack_likely = degree <= 0.5 or rel_degree <= 0.5
+        # attack_likely = min(degree, rel_degree) <= 0.5
         yield attack_likely
 
 
