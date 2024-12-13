@@ -107,11 +107,9 @@ def mean_sequence(window, alpha=0.5):
     """ Return the running average over a window."""
     transformed = np.empty_like(window)
     transformed[0] = window[0]
-    val = window[0]
     neg_alpha = 1 - alpha
-    for idx, item in enumerate(window[1:]):
-        val = (val * alpha) + (item * neg_alpha)
-        transformed[idx] = val
+    for idx in range(1, len(window)):
+        transformed[idx] = (window[idx - 1] * alpha) + (window[idx] * neg_alpha)
     return transformed
 
 
