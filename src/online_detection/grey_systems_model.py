@@ -142,6 +142,57 @@ def behavioral_sequence_ratio_2(window):
 
 
 @njit
+def behavior_relative_difference(window):
+    """ """
+    head = window[0]
+    tail = window[-1]
+    if head == 0 and tail == 0:
+        s_0 = 0
+    else:
+        s_0 = 0.5 * abs(tail - head) / ( 0.5 * (abs(tail) + abs(head)))
+    if head == 0.0:
+        for item in window[1:]:
+            if item != 0.0:
+                s_0 += abs(item - head) / (0.5 * (abs(item) + abs(head)))
+            # if head and item are zero, no difference
+    else:
+        for item in window[1:]:
+            s_0 += abs(item - head) / (0.5 * (abs(item) + abs(head)))
+    return s_0
+
+
+@njit
+def behavior_log_difference(window):
+    """ """
+    head = window[0]
+    tail = window[-1]
+    match (head, tail):
+        case (0, 0):
+            s_0 = 0.0
+        case (0, tail):
+            s_0 = math.inf
+        case (head, 0):
+            s_0 = -math.inf
+        case (head, tail):
+            s_0 = 0.5 * math.log(tail / head)
+        case _:
+            raise NotImplementedError
+    for item in window[1:]:
+        match (head, tail):
+            case (0, 0):
+                s_0 += 0.0
+            case (0, tail):
+                s_0 += math.inf
+            case (head, 0):
+                s_0 += -math.inf
+            case (head, tail):
+                s_0 += math.log(item / head)
+            case _:
+                raise NotImplementedError
+    return s_0
+
+
+@njit
 def grey_incidence_degree(val_1, val_2, c=3.0):
     num = 1.0 + abs(val_1) + abs(val_2)
     return num / (num + c * abs(val_1 - val_2))
