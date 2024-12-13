@@ -82,6 +82,14 @@ def accumulation_sequence(window: np.ndarray):
 
 
 @njit
+def accumulation_sequence_inplace(window: np.ndarray, out: np.ndarray):
+    """ Return the accumulation over the window."""
+    # return np.add.accumulate(window)
+    out[:] = window.cumsum()
+    out[-1] = window.sum()
+
+
+@njit
 def mean_sequence(window, alpha=0.5):
     """ Return the running average over a window."""
     transformed = np.empty_like(window)
@@ -92,6 +100,16 @@ def mean_sequence(window, alpha=0.5):
         val = (val * alpha) + (item * neg_alpha)
         transformed[idx] = val
     return transformed
+
+
+@njit
+def mean_sequence_inplace(window, out, alpha=0.5):
+    """ Return the running average over a window."""
+    out[0] = window[0]
+    val = window[0]
+    neg_alpha = 1 - alpha
+    for idx in range(1, len(window)):
+        out[idx] = (window[idx - 1] * alpha) + (window[idx] * neg_alpha)
 
 
 @njit
@@ -141,6 +159,12 @@ def get_rolling_window(obs, idx, n):
     # this can be either way, we look forward but can look back
     # return obs[idx - n:idx]
     return obs[idx:idx + n]
+
+
+# @njit
+def get_rolling_window_inplace(obs, idx, n, out):
+    """ """
+    out[:] = obs[idx:idx + n]
 
 
 def get_grey_model(time, data, window_size=1, c=3, c_ratio=3, shock_intervals=None, non_shock_intervals=None, with_progress=False):
