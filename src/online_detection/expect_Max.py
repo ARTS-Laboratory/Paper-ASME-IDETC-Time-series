@@ -47,7 +47,6 @@ def expectation_maximization(
         # inverse = posterior_probs(data, 1 - pi_hat, mu1_hat, sig1_hat, mu2_hat, sig2_hat)
         attack_prob, inverse = posterior_probs_v2(
             data, pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat)
-        # Maximization
         mu1_hat, mu2_hat, sig1_hat, sig2_hat, pi_hat = maximization(
             data, attack_prob, inverse, mu1_hat, mu2_hat, sig1_hat, sig2_hat,
             pi_hat, size)
@@ -90,7 +89,7 @@ def expectation_maximization_generator(
     out = np.empty((2, size))
     attack_prob, inverse = out[0], out[1]
     for unknown in unknowns:
-        data[-1] = unknown  # reassign last value to our new unknown
+        data[-1] = unknown # reassign last value to our new unknown
         # For some number of epochs, iterate over given data until convergence
         for idx in range(epochs):
             # Expectation
@@ -263,28 +262,6 @@ def posterior_probs_v2_inplace(points, attack_prob, attack_mean, attack_var, nor
     num_2 *= (1 - attack_prob)
     denom = num_1 + num_2
     normalize_probs(num_1, num_2, denom)
-
-
-# @profile
-# @njit
-# def posterior_probs_v3(points, attack_prob, attack_mean, attack_var, normal_mean, normal_var):
-#     """ """
-#     # case 1: both nonzero variance
-#     arr_1 = np.array(([attack_mean, attack_var, attack_prob], [normal_mean, normal_var, 1 - attack_prob]))
-#     probs_inverse = np.subtract.outer(points, arr_1[:, 0])
-#     probs_inverse **= 2
-#     probs_inverse *= 0.5
-#     probs_inverse /= arr_1[:, 1]
-#     # e^probs_inverse in-place
-#     np.exp(probs_inverse, probs_inverse)
-#     probs_inverse *= arr_1[:, 2]
-#     probs_inverse /= np.sqrt(arr_1[:, 1])
-#     denom = np.sum(probs_inverse, axis=1)
-#     denom_nonzero_idx = denom != 0.0
-#     probs_inverse[:, 0] = np.where(denom_nonzero_idx, probs_inverse[:, 0] / denom, probs_inverse[:, 0])
-#     probs_inverse[:, 1] = np.where(denom_nonzero_idx, probs_inverse[:, 1] / denom, probs_inverse[:, 1])
-#     probs, inverse = np.split(probs_inverse.T, 2)
-#     return probs.ravel(), inverse.ravel()
 
 
 @njit
