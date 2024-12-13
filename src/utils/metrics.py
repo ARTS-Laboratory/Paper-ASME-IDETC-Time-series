@@ -92,7 +92,7 @@ def kurtosis(vector: ndarray) -> float:
 
 def crest_factor(vector: ndarray) -> float:
     """ Return crest factor of vector."""
-    return np.max(vector, axis=-1) / rms(vector)
+    return np.max(np.abs(vector), axis=-1) / rms(vector)
 
 
 def shape_factor(vector: ndarray) -> float:
@@ -102,7 +102,7 @@ def shape_factor(vector: ndarray) -> float:
 
 def impulse_factor(vector: ndarray) -> float:
     """ Return impulse factor of vector."""
-    return np.max(vector, axis=-1) / abs_mean(vector)
+    return np.max(np.abs(vector), axis=-1) / abs_mean(vector)
 
 
 def frequency_center(vector: ndarray, time_step: float) -> float:
