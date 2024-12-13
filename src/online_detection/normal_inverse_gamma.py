@@ -11,8 +11,9 @@ class NormalInverseGamma:
 
 @dataclass
 class NormalInverseGammaRunLength:
-    alpha: float
-    beta: float
-    mu: float
-    kappa: float
     run_length: int
+    params: NormalInverseGamma
+    # alpha: float
+    # beta: float
+    # mu: float
+    # kappa: float
