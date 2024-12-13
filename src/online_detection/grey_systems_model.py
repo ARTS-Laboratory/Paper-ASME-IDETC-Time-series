@@ -53,16 +53,25 @@ def grey_model_generator(data, window_size=1, c=3, c_ratio=300):
         :param float c_ratio: Constant multiplier for degree of ratio grey incidence.
         :returns:
         :rtype: None"""
-    window_1 = get_rolling_window(data, 0, window_size)
-    x_1 = accumulation_sequence(window_1)
-    z_1 = mean_sequence(x_1, alpha=0.5)
+    sample_arr = np.empty((3, window_size))
+    window_1 = sample_arr[0]
+    x_1 = sample_arr[1]
+    z_1 = sample_arr[2]
+    get_rolling_window_inplace(data, 0, window_size, window_1)
+    accumulation_sequence_inplace(window_1, x_1)
+    mean_sequence_inplace(x_1, z_1, alpha=0.5)
     s_1 = behavioral_sequence(z_1)
-    s_1_ratio = behavioral_sequence_ratio(z_1)
-    s_1_ratio = behavioral_sequence_ratio_2(z_1)
+    # s_1_ratio = behavioral_sequence_ratio(z_1)
+    # s_1_ratio = behavioral_sequence_ratio_2(z_1)
+    s_1_rel_dist = behavior_relative_difference(z_1)
+    out_arr = np.empty((3, window_size))
+    window_2 = out_arr[0]
+    x_2 = out_arr[1]
+    z_2 = out_arr[2]
     for idx in range(0, len(data) - window_size):
-        window_2 = get_rolling_window(data, idx, window_size)
-        x_2 = accumulation_sequence(window_2)
-        z_2 = mean_sequence(x_2, alpha=0.5)
+        get_rolling_window_inplace(data, idx, window_size, window_2)
+        accumulation_sequence_inplace(window_2, x_2)
+        mean_sequence_inplace(x_2, z_2, alpha=0.5)
         s_2 = behavioral_sequence(z_2)
         s_2_ratio = behavioral_sequence_ratio(z_2)
         s_2_ratio = behavioral_sequence_ratio_2(z_2)
