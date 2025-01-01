@@ -17,7 +17,6 @@ try:
 except ImportError:
     raise Warning('Expected Cython imports to be available.')
 from online_detection.model_helpers import detection_to_intervals_for_generator_v1
-from online_detection.normal_inverse_gamma import NormalInverseGammaRunLength, NormalInverseGamma
 from utils.read_data import get_data
 
 
@@ -31,12 +30,13 @@ def bayesian_online_changepoint_detection_v6_generator(data, mu, kappa, alpha, b
     accumulator = 0.0
     alpha_arr, beta_arr, mu_arr, kappa_arr = np.array([alpha]), np.array([beta]), np.array([mu]), np.array([kappa])
     for idx, event in enumerate(my_data):
-        probabilities, alpha_arr, beta_arr, mu_arr, kappa_arr, run_length_arr = calculate_probabilities_v3(event, alpha_arr, beta_arr, mu_arr, kappa_arr, run_length_arr, probabilities, lamb, trunc_threshold=1e-32)
+        probabilities, alpha_arr, beta_arr, mu_arr, kappa_arr, run_length_arr = calculate_probabilities_v3(
+            event, alpha_arr, beta_arr, mu_arr, kappa_arr, run_length_arr, probabilities, lamb, trunc_threshold=1e-32)
         max_idx = find_max_cp(probabilities)
         maxes.append(run_length_arr[max_idx])
         if maxes[-1] < maxes[0]:
             # reset run length and accumulator
-            run_length, accumulator = update_attack_v4(event)
+            run_length, accumulator = update_attack(event)
             # reset params
             probabilities = np.asarray([probabilities.sum()])
             run_length_arr = np.asarray([0], dtype=np.uint32)
@@ -65,7 +65,8 @@ def bayesian_online_changepoint_detection_deque_generator_v2(data, mu, kappa, al
 
 @profile
 # @njit
-def calculate_probabilities_v3(event, alpha, beta, mu, kappa, run_lengths, probabilities, lamb, trunc_threshold=1e-16):
+def calculate_probabilities_v3(
+        event, alpha, beta, mu, kappa, run_lengths, probabilities, lamb, trunc_threshold=1e-16):
     """ """
     hazard = hazard_function(lamb)
     priors = calculate_prior_arr_v1(event, alpha, beta, mu, kappa)
@@ -101,17 +102,7 @@ def calculate_probabilities_v3(event, alpha, beta, mu, kappa, run_lengths, proba
     return new_probabilities, new_alpha, new_beta, new_mu, new_kappa, new_run_lengths
 
 
-
-
-@jit
-def calculate_probs_helper(probs, prior, hazard, arr):
-    """ Calculate the new probabilities in-place"""
-    arr[0] = np.sum(probs) * hazard
-    arr[1:] = probs * (1 - hazard)
-    arr *= prior
-
-
-def update_attack_v4(event):
+def update_attack(event: float):
     """ """
     # event is an attack
     accum = event
@@ -119,35 +110,27 @@ def update_attack_v4(event):
     return run_length_p, accum
 
 
-@njit
-def update_no_attack_v5(
-        event, run_length, cp, accumulator,
-        mu, kappa, alpha, beta):
-    """ """
-    # update
-    kappa_plus_one = kappa + 1
-    run_length_p = run_length + 1
-    kappa_p = kappa_plus_one
-    alpha_p = alpha + 0.5
-    new_accumulator = event + accumulator
-    mu_p = (kappa * mu + event) / kappa_plus_one
-    beta_p = beta + kappa * np.square(event - mu) / (2 * kappa_plus_one)
-
-    # run_length_p = run_length + 1
-    # kappa_p = kappa + 1
-    # alpha_p = alpha + 0.5
-    # new_accumulator = event + accumulator
-    # x_bar = (1 - cp) * (new_accumulator / run_length_p) + event * cp
-    # mu_p = (kappa * mu + x_bar) / kappa_p
-    # # mu_p = cp * event + ((x_bar + run_length * mu_hat) * (1 - cp))/(run_length_p)# (kappa_hat * mu_hat + x_bar) / kappa_p  # (kappa_hat * mu_hat + x_bar) / (kappa_hat + 1)
-    # beta_p = beta + kappa * np.square(event - mu) / (2 * kappa_p)
-    # beta_hat + kappa_hat * (event - x_bar) ** 2 / (2 * (kappa_hat + 1))
-    # beta_p = beta_hat + kappa_hat * np.square(event - x_bar) / ( 2 * kappa_p)
-    return run_length_p, new_accumulator, mu_p, kappa_p, alpha_p, beta_p
+# @njit
+# def update_no_attack_v5(
+#         event, run_length, cp, accumulator,
+#         mu, kappa, alpha, beta):
+#     """ """
+#     # update
+#     kappa_plus_one = kappa + 1
+#     run_length_p = run_length + 1
+#     kappa_p = kappa_plus_one
+#     alpha_p = alpha + 0.5
+#     new_accumulator = event + accumulator
+#     mu_p = (kappa * mu + event) / kappa_plus_one
+#     beta_p = beta + kappa * np.square(event - mu) / (2 * kappa_plus_one)
+#
+#     return run_length_p, new_accumulator, mu_p, kappa_p, alpha_p, beta_p
 
 
 @njit
-def update_no_attack_arr(event, run_length, cp, accumulator, alpha_arr, beta_arr, mu_arr, kappa_arr, alpha, beta, mu, kappa):
+def update_no_attack_arr(
+        event, run_length, cp, accumulator, alpha_arr, beta_arr, mu_arr,
+        kappa_arr, alpha, beta, mu, kappa):
     """ """
     size = alpha_arr.size + 1
     # update
@@ -163,16 +146,6 @@ def update_no_attack_arr(event, run_length, cp, accumulator, alpha_arr, beta_arr
     kappa_plus = kappa_arr + 1
     mu_p[1:] = (kappa_arr * mu_arr + event) / kappa_plus
     beta_p[1:] = beta_arr + kappa_arr * np.square(event - mu_arr) / (2 * kappa_plus)
-    # run_length_p = run_length + 1
-    # kappa_p = kappa_arr + 1
-    # alpha_p = alpha_arr + 0.5
-    # new_accumulator = event + accumulator
-    # x_bar = (1 - cp) * (new_accumulator / run_length_p) + event * cp
-    # # mu_p = (kappa_arr * mu_arr + x_bar) / kappa_p
-    # mu_p = cp * event + ((x_bar + run_length * mu_arr) * (1 - cp))/(run_length_p)# (kappa_hat * mu_hat + x_bar) / kappa_p  # (kappa_hat * mu_hat + x_bar) / (kappa_hat + 1)
-    # beta_p = beta_arr + kappa_arr * np.square(event - mu_arr) / (2 * kappa_p)
-    # # beta_hat + kappa_hat * (event - x_bar) ** 2 / (2 * (kappa_hat + 1))
-    # # beta_p = beta_hat + kappa_hat * np.square(event - x_bar) / ( 2 * kappa_p)
     mu_p[0] = mu
     kappa_p[0] = kappa
     alpha_p[0] = alpha
@@ -186,8 +159,7 @@ def calculate_prior_arr(point, alphas, betas, mus, kappas):
     return t_func_arr(point, mus, ((betas * (kappas + 1.0)) / (alphas * kappas)), 2 * alphas)
 
 
-@profile
-# @njit
+@njit
 def calculate_prior_arr_v1(point, alphas, betas, mus, kappas):
     """ Return student's T distribution PDF for given parameters of inverse gamma distribution."""
     t_values = calculate_prior_helper(point, alphas, betas, mus, kappas)
@@ -212,7 +184,6 @@ def calculate_prior_arr_v1(point, alphas, betas, mus, kappas):
 @njit
 def calculate_prior_helper(point, alphas, betas, mus, kappas):
     """ """
-    # # old code
     denom = 2 * betas * (kappas + 1.0) / kappas
     t_values = (point - mus)**2 / denom
     t_values += 1.0
@@ -223,22 +194,13 @@ def calculate_prior_helper(point, alphas, betas, mus, kappas):
     return t_values
 
 
-# def calculate_prior_deque(point, params, out):
-#     if isinstance(out, list):
-#         calculate_prior_deque_list(point, tuple(params), out)
-#     elif isinstance(out, np.ndarray):
-#         calculate_prior_deque_ndarray(point, params, out)
-#     else:
-#         raise NotImplementedError()
-
-
-# @njit
-def calculate_prior_deque_list(point, params):
-        # alpha, beta, mu, kappa is the order of items in param
-    # return [calculate_prior_helper(point, param.alpha, param.beta, param.mu,
-    #                                       param.kappa) / scipy.special.beta(0.5, param.alpha) for param in params]
-    return [calculate_prior_helper(point, param[0], param[1], param[2],
-                                          param[3]) / scipy.special.beta(0.5, param[1]) for param in params]
+# @profile
+@njit
+def calculate_prior_arr_inplace(point, alphas, betas, mus, kappas, out):
+    """ """
+    calculate_prior_helper_inplace(point, alphas, betas, mus, kappas, out)
+    out /= beta_numba(0.5, alphas)
+    # out /= scipy.special.beta(0.5, alphas)
 
 
 # @njit
@@ -253,71 +215,15 @@ def scipy_beta(a, b):
         return scipy.special.beta(a, b)
     return scipy_beta_fn
 
-@jit
-def calculate_prior(point, alpha, beta, mu, kappa):
-    """ """
-    return t_func(point, mu, ((beta * (kappa + 1)) / (alpha * kappa)), 2 * alpha)
 
-
-@jit
-def calculate_non_cp(probs, prior, h):
-    """ """
-    # H is a function or a constant
-    return np.asarray(probs) * prior * (1 - h)
-
-
-@jit
-def calculate_cp(probs, prior, h):
-    return np.sum(np.asarray(probs) * prior * h)
-
-
-@jit
-def normalize_probs(probs):
-    total = np.sum(probs)
-    if total == 0:
-        return probs
-    return np.asarray(probs) / total  # np.asarray(probs) * (1 / total)
-
-
-@jit
-def normalize_probs_2(probs):
-    total = np.sum(probs)
-    if total == 0:
-        return
-    probs /= total  # np.asarray(probs) * (1 / total)
-
-
-@jit
-def normalize_probs_inplace(probs, idx):
-    total = np.sum(probs[0:idx])
-    if total != 0:
-        probs[0:idx] /= total
-
-
-@jit
+# @njit
 def find_max_cp(probs):
     return np.argmax(probs)
 
 
-@jit
-def hazard_function(lam):
+# @njit
+def hazard_function(lam: float):
     return 1 / lam
-
-
-@jit
-def t_func(x_bar, mu, s, n):
-    """
-
-    s(a in function) normalizing value: beta * (kappa + 1) / (alpha * kappa)
-    n(degrees of freedom): 2 * alpha
-    """
-    # n is 2 * alpha_hat is df
-    # s = beta_hat * (kappa_hat + 1) / (alpha_hat * kappa_hat) is a
-
-    # return (1 / s) * t_pdf((x_bar - mu) / s, n)
-    s_root = math.sqrt(s)
-    return t_pdf((x_bar - mu) / s_root, n) / s_root
-    # return (x_bar - mu_hat) / (s / np.sqrt(n))
 
 
 @njit
@@ -327,19 +233,6 @@ def t_func_arr(x_bar, mu_arr, s_arr, n_arr):
     s_n_arr = s_arr * n_arr
     n_half = n_arr * 0.5
     t_values = ((x_bar - mu_arr)**2 / s_n_arr + 1.0) ** (-(n_half + 0.5))
-    # t_values = np.square(x_bar - mu_arr)
-    # t_values /= s_n_arr
-    # t_values += 1.0
-    # t_values **= (-(n_arr + 1) / 2)
-
-    # t_values = ((x_bar - mu_arr)**2 / s_n_arr + 1.0) ** (-(n_arr + 1) / 2)
-
-    # t_values += (np.square(x_bar - mu_arr) / (s_arr * n_arr) + 1.0) ** (-(n_arr + 1) / 2)
-
-    # t_values /= (np.sqrt(s_n_arr))
-    # # out = np.empty_like(t_values)
-    # out = t_func_arr_helper_beta(n_half)
-    # t_values *= out
 
     t_values /= (np.sqrt(s_n_arr) * beta_numba(0.5, n_arr / 2))
     return t_values
@@ -354,49 +247,29 @@ def t_func_arr(x_bar, mu_arr, s_arr, n_arr):
     # return exponentials / (coeffs * np.sqrt(s_arr))
 
 
-@njit
-def t_pdf(t_value, df):
-    """ """
-    exponential = (1.0 + t_value ** 2 / df) ** (-(df + 1) / 2)
-    exponential /= (np.sqrt(df) * beta_func(0.5, df / 2))
-    # coeff = 1.0 / (np.sqrt(df) * beta_func(0.5, df / 2))
-    return exponential
-    # return coeff * exponential
-
-
 @vectorize(['float64(float64, float64)', 'float32(float32, float32)'], cache=False, nopython=True)
 def beta_numba(val_1, val_2):
     """ Return vectorized function for """
     return math.exp(math.lgamma(val_1) + math.lgamma(val_2) - math.lgamma(val_1 + val_2))
 
 
-@guvectorize(
-    ['void(float64[:], float64[:])', 'void(float32[:], float32[:])'],
-    '(n)->(n)', cache=True, nopython=True)
-def t_func_arr_helper_beta(arr, res):
-    """ Return beta function for vector"""
-    for idx, item in enumerate(arr):
-        res[idx] = math.exp(math.lgamma(item) - math.lgamma(0.5 + item))
-    res *= np.sqrt(np.pi)
-    # old
-    # gamma_1 = math.lgamma(0.5)
-    # for idx, item in enumerate(arr / 2):
-    #     res[idx] = np.exp(gamma_1 + math.lgamma(item) - math.lgamma(0.5 + item))
-#
-#
 # @guvectorize(
-#     ['(float32, float32[:], float32[:])', '(float32, float64[:], float64[:])', '(float64, float64[:], float64[:])'],
-#     '(), (n) -> (n)', cache=True)
-# def beta_numba_arr(arr_1, arr_2, res):
+#     ['void(float64[:], float64[:])', 'void(float32[:], float32[:])'],
+#     '(n)->(n)', cache=True, nopython=True)
+# def t_func_arr_helper_beta(arr, res):
 #     """ Return beta function for vector"""
-#     gamma_1 = math.lgamma(arr_1)
-#     for idx, item in enumerate(arr_2):
-#         res[idx] = math.exp(gamma_1 + math.lgamma(item) - math.lgamma(arr_1 + item))
-
-
-@njit
-def beta_func(a, b):
-    return np.exp(math.lgamma(a) + math.lgamma(b) - math.lgamma(a + b))
+#     for idx, item in enumerate(arr):
+#         res[idx] = math.exp(math.lgamma(item) - math.lgamma(0.5 + item))
+#     res *= np.sqrt(np.pi)
+#     # old
+#     # gamma_1 = math.lgamma(0.5)
+#     # for idx, item in enumerate(arr / 2):
+#     #     res[idx] = np.exp(gamma_1 + math.lgamma(item) - math.lgamma(0.5 + item))
+#
+#
+# @njit
+# def beta_func(a, b):
+#     return np.exp(math.lgamma(a) + math.lgamma(b) - math.lgamma(a + b))
 
 
 def get_bocpd_v5_from_generator(time, data, mu, kappa, alpha, beta, lamb,
@@ -445,7 +318,7 @@ def get_bocpd(
             # Update count
             cps += 1
             # reset run length and accumulator
-            run_length, accumulator = update_attack_v4(event)
+            run_length, accumulator = update_attack(event)
             # alpha_arr, beta_arr, mu_arr, kappa_arr = np.concatenate([[alpha], alpha_arr]), np.concatenate([[beta], beta_arr]), np.concatenate([[mu], mu_arr]), np.concatenate([[kappa], kappa_arr])
             # reset params
             probabilities = np.asarray([probabilities.sum()])
@@ -511,7 +384,7 @@ def get_bocpd_windowed(time, data, mu, kappa, alpha, beta, lamb,
             maxes.append(run_length_arr[max_idx])
             if maxes[-1] < maxes[0]:
                 # a change definitely occurred in the past
-                run_length, accumulator = update_attack_v4(event)
+                run_length, accumulator = update_attack(event)
                 # reset params
                 probabilities = np.asarray([probabilities.sum()])
                 run_length_arr = np.asarray([0], dtype=np.uint32)
