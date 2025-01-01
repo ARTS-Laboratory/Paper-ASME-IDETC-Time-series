@@ -403,8 +403,9 @@ def get_bocpd_windowed(time, data, mu, kappa, alpha, beta, lamb,
             else:
                 # update
                 cp = probabilities[0]
-                run_length, accumulator, mu, kappa, alpha, beta = update_no_attack_v5(
-                    event, run_length, cp, accumulator, mu, kappa, alpha, beta)
+                run_length, accumulator, alpha_arr, beta_arr, mu_arr, kappa_arr = update_no_attack_arr(
+                    event, run_length, cp, accumulator, alpha_arr, beta_arr,
+                    mu_arr, kappa_arr, alpha, beta, mu, kappa)
             attack_probs = calculate_prior_arr(event, alpha_arr, beta_arr, mu_arr, kappa_arr)
             attack_probs *= probabilities
             val_prob = attack_probs.sum()
