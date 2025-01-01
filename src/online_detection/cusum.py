@@ -252,7 +252,7 @@ def get_cusum_revised(
     return shocks, non_shocks
 
 
-def get_cusum_from_generator():
+def get_cusum_from_generator(time, data, mean, std_dev, h, alpha):
     """ """
     pass
 
