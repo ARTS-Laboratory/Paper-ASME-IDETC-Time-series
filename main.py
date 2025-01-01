@@ -399,25 +399,48 @@ def data_transformations(data):
     left_data, right_data = data[:bkps[0]], data[bkps[0]:bkps[1]]
     raw_fig = plot_metric_histogram(left_data, right_data, num_bins=n_bins)
     abs_fig = plot_metric_histogram(np.abs(left_data), np.abs(right_data), num_bins=n_bins)
+    diff_fig = plot_metric_histogram(np.ediff1d(left_data), np.ediff1d(right_data), num_bins=n_bins)
+    plt.show()
 
-    window_size = 100
-    # windows = np.array(list(sliding_window(data, window_size)))
-    windows = np.array(list(sliding_window(np.abs(np.ediff1d(data)), window_size)))
+    window_size = 10
+    windows = np.array(list(sliding_window(data, window_size)))
+    # windows = np.array(list(sliding_window(np.abs(np.ediff1d(data)), window_size)))
+
+    left_windows = np.array(list(sliding_window(left_data, window_size)))
+    right_windows = np.array(list(sliding_window(right_data, window_size)))
+    transforms = [
+        utils.metrics.abs_mean, utils.metrics.rms, utils.metrics.skewness,
+        utils.metrics.kurtosis, utils.metrics.crest_factor,
+        utils.metrics.impulse_factor, utils.metrics.shape_factor,
+        scipy.stats.iqr
+    ]
+    for transform in transforms:
+        print('Next Transform...')
+        # transform_arr = np.array([transform(window) for window in windows])
+        # left_transform = transform_arr[:bkps[0]]
+        # right_transform = transform_arr[bkps[0]:bkps[1]]
+        left_transform = np.array([transform(window) for window in left_windows])
+        right_transform = np.array([transform(window) for window in right_windows])
+        print(scipy.stats.describe(left_transform))
+        print(scipy.stats.describe(right_transform))
+        transform_hist_fig = plot_metric_histogram(left_transform, right_transform, num_bins=n_bins)
+    print('End of iterations')
     window_itr = np.nditer(windows)
-    abs_arr = np.array([utils.metrics.abs_mean(window) for window in windows])
-    abs_fig = plot_metric_histogram(abs_arr[:bkps[0]], abs_arr[bkps[0]:bkps[1]])
-    rms_arr = np.array([utils.metrics.rms(window) for window in windows])
-    rms_fig = plot_metric_histogram(rms_arr[:bkps[0]], rms_arr[bkps[0]:bkps[1]])
-    skew_arr = np.array([utils.metrics.skewness(window) for window in windows])
-    skewness_fig = plot_metric_histogram(skew_arr[:bkps[0]], skew_arr[bkps[0]:bkps[1]])
-    kurtosis_arr = np.array([utils.metrics.kurtosis(window) for window in windows])
-    kurtosis_fig = plot_metric_histogram(kurtosis_arr[:bkps[0]], kurtosis_arr[bkps[0]:bkps[1]])
-    crest_arr = np.array([utils.metrics.crest_factor(window) for window in windows])
-    crest_fig = plot_metric_histogram(crest_arr[:bkps[0]], crest_arr[bkps[0]:bkps[1]])
-    impulse_arr = np.array([utils.metrics.impulse_factor(window) for window in windows])
-    impulse_fig = plot_metric_histogram(impulse_arr[:bkps[0]], impulse_arr[bkps[0]:bkps[1]])
-    shape_arr = np.array([utils.metrics.shape_factor(window) for window in windows])
-    shape_fig = plot_metric_histogram(shape_arr[:bkps[0]], shape_arr[bkps[0]:bkps[1]])
+    # abs_arr = np.array([utils.metrics.abs_mean(window) for window in windows])
+    # abs_fig = plot_metric_histogram(abs_arr[:bkps[0]], abs_arr[bkps[0]:bkps[1]])
+    # rms_arr = np.array([utils.metrics.rms(window) for window in windows])
+    # rms_fig = plot_metric_histogram(rms_arr[:bkps[0]], rms_arr[bkps[0]:bkps[1]])
+    # skew_arr = np.array([utils.metrics.skewness(window) for window in windows])
+    # skewness_fig = plot_metric_histogram(skew_arr[:bkps[0]], skew_arr[bkps[0]:bkps[1]])
+    # kurtosis_arr = np.array([utils.metrics.kurtosis(window) for window in windows])
+    # kurtosis_fig = plot_metric_histogram(kurtosis_arr[:bkps[0]], kurtosis_arr[bkps[0]:bkps[1]])
+    # crest_arr = np.array([utils.metrics.crest_factor(window) for window in windows])
+    # crest_fig = plot_metric_histogram(crest_arr[:bkps[0]], crest_arr[bkps[0]:bkps[1]])
+    # impulse_arr = np.array([utils.metrics.impulse_factor(window) for window in windows])
+    # impulse_fig = plot_metric_histogram(impulse_arr[:bkps[0]], impulse_arr[bkps[0]:bkps[1]])
+    # shape_arr = np.array([utils.metrics.shape_factor(window) for window in windows])
+    # shape_fig = plot_metric_histogram(shape_arr[:bkps[0]], shape_arr[bkps[0]:bkps[1]])
+    ## Rejected metrics below
     # peaked_arr = np.array([np.max(np.abs(window))/utils.metrics.rms(window) for window in windows])
     # peaked_fig = plot_metric_histogram(peaked_arr[:bkps[0]], peaked_arr[bkps[0]:bkps[1]])
     # simp_arr = np.array([np.mean(np.abs(window)) + np.var(window) for window in windows])
@@ -426,8 +449,10 @@ def data_transformations(data):
     # rolling = np.array([np.var(np.ediff1d(window))/np.sqrt(np.mean(np.abs(window))) for window in windows])
     # rolling *= scalar
     # rolling_fig = plot_metric_histogram(rolling[:bkps[0]], rolling[bkps[0]:bkps[1]])
-    # range_arr = np.array([np.max(window) - np.min(window) for window in windows])
-    # range_fig = plot_metric_histogram(range_arr[:bkps[0]], range_arr[bkps[0]:bkps[1]])
+    range_arr = np.array([np.max(window) - np.min(window) for window in windows])
+    print(scipy.stats.describe(range_arr[:bkps[0]]))
+    print(scipy.stats.describe(range_arr[bkps[0]:bkps[1]]))
+    range_fig = plot_metric_histogram(range_arr[:bkps[0]], range_arr[bkps[0]:bkps[1]])
     # iq_range_arr = np.array([scipy.stats.iqr(window) for window in windows])
     # iq_range_fig = plot_metric_histogram(iq_range_arr[:bkps[0]], iq_range_arr[bkps[0]:bkps[1]])
 
