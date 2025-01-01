@@ -454,6 +454,10 @@ def data_transformations(data):
 def plot_detection_1(time, data, models):
     """ """
     #todo save names should be part of config
+    # Get ground truth here
+    # Evaluation stuff
+    (true_shocks, true_nonshocks) = make_ground_truth(time, data)
+    ground = convert_interval_indices_to_full_arr(true_shocks, true_nonshocks, len(time))
     for model in models:
         match model.name:
             case 'bocpd':
@@ -463,6 +467,8 @@ def plot_detection_1(time, data, models):
                 detection_fig = plot_shock(time, data, shocks, non_shocks)
                 plt.savefig(Path(model.save_path, 'bocpd_fig.png'), dpi=350)
                 plt.close(detection_fig)
+                pred = intervals_to_dense_arr(time, shocks, non_shocks)
+                print_scores(time, ground, pred)
             case 'expectation maximization':
                 hp: Hyperparameters.EMHyperparams = model.hyperparameters
                 rng = np.random.default_rng()
@@ -479,12 +485,16 @@ def plot_detection_1(time, data, models):
                 detection_fig = plot_shock(time, data, shocks, non_shocks)
                 plt.savefig(Path(model.save_path, 'expectation_maximization_fig.png'), dpi=350)
                 plt.close(detection_fig)
+                pred = intervals_to_dense_arr(time, shocks, non_shocks)
+                print_scores(time, ground, pred)
             case 'cusum':
                 shocks, non_shocks = cusum_alg(
                     time, data, **asdict(model.hyperparameters))
                 detection_fig = plot_shock(time, data, shocks, non_shocks)
                 plt.savefig(Path(model.save_path, 'cusum_fig.png'), dpi=350)
                 plt.close(detection_fig)
+                pred = intervals_to_dense_arr(time, shocks, non_shocks)
+                print_scores(time, ground, pred)
             case 'grey':
                 hp: Hyperparameters.GreyHyperparams = model.hyperparameters
                 shocks, non_shocks = get_grey_model_from_generator(
@@ -494,6 +504,8 @@ def plot_detection_1(time, data, models):
                 detection_fig = plot_shock(time, data, shocks, non_shocks)
                 plt.savefig(Path(model.save_path, 'grey_fig.png'), dpi=350)
                 plt.close(detection_fig)
+                pred = intervals_to_dense_arr(time, shocks, non_shocks)
+                print_scores(time, ground, pred)
             case 'nonparametric':
                 hp: Hyperparameters.NonparametricHyperparams = model.hyperparameters
                 shocks, non_shocks = get_nonparametric_model_from_generator(
@@ -502,6 +514,8 @@ def plot_detection_1(time, data, models):
                 detection_fig = plot_shock(time, data, shocks, non_shocks)
                 plt.savefig(Path(model.save_path, 'nonparametric_fig.png'), dpi=350)
                 plt.close(detection_fig)
+                pred = intervals_to_dense_arr(time, shocks, non_shocks)
+                print_scores(time, ground, pred)
             case _:
                 raise NotImplementedError
 
