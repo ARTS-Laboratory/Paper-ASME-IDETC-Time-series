@@ -39,3 +39,10 @@ def freq_center_hist(data):
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     return fig
+
+
+def plot_metric_histogram(left_data, right_data, num_bins=32):
+    fig, ax = plt.subplots(ncols=2, sharey=True)
+    ax[0].hist(left_data, bins=num_bins)
+    ax[1].hist(right_data, bins=num_bins)
+    return fig

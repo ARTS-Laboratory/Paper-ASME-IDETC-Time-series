@@ -18,6 +18,7 @@ import utils
 from DetectionAlgorithm import DetectionAlgorithm
 from fig_funcs import rupture_changepoint_plots
 from fig_funcs.detection_plots import plot_shock, interval_histogram, raw_histogram  # , convert_intervals_to_time_memoized
+from fig_funcs.histograms import plot_metric_histogram
 from fig_funcs.rupture_changepoint_plots import plot_breaks
 from fig_funcs.signal_plots import plot_signal, plot_signal_fft, plot_signal_power_spectrum, \
     power_spectra_sections, signal_with_inset_axes
