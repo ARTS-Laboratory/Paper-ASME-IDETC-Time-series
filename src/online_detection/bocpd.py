@@ -16,6 +16,10 @@ try:
         bayesian_online_changepoint_detection_deque_cy)
 except ImportError:
     raise Warning('Expected Cython imports to be available.')
+try:
+    from tda_project_rusty import run_bocpd, run_expect_max
+except ImportError:
+    raise Warning('Expected rust extensions to be available.')
 from online_detection.model_helpers import detection_to_intervals_for_generator_v1
 from utils.read_data import get_data
 
@@ -291,17 +295,25 @@ def get_bocpd_v5_from_generator(time, data, mu, kappa, alpha, beta, lamb,
         shock_intervals=None, non_shock_intervals=None, with_progress=False):
     """ """
     # Instantiating variables
-    shocks = [] if shock_intervals is None else shock_intervals
-    non_shocks = [] if non_shock_intervals is None else non_shock_intervals
+    # shocks = [] if shock_intervals is None else shock_intervals
+    # non_shocks = [] if non_shock_intervals is None else non_shock_intervals
+
     my_data = data  # np.abs(data)
     begin = 0
-    if with_progress:
-        bocpd_model_gen = tqdm(
-            bayesian_online_changepoint_detection_v6_generator(
-                my_data, mu, kappa, alpha, beta, lamb), total=len(data))
-    else:
-        bocpd_model_gen = bayesian_online_changepoint_detection_v6_generator(
-            my_data, mu, kappa, alpha, beta, lamb)
+    # try to use rust version, if it's not in the wheel fall back to python implementation
+    try:
+        data_list = data.tolist()
+        out = run_bocpd(data_list, mu, kappa, alpha, beta, lamb)
+        bocpd_model_gen = (prob <= 0.05 for prob in out)
+    except NameError:
+        print('Exception occurred, reverting to python')
+        if with_progress:
+            bocpd_model_gen = tqdm(
+                bayesian_online_changepoint_detection_v6_generator(
+                    my_data, mu, kappa, alpha, beta, lamb), total=len(data))
+        else:
+            bocpd_model_gen = bayesian_online_changepoint_detection_v6_generator(
+                my_data, mu, kappa, alpha, beta, lamb)
     shocks, non_shocks = detection_to_intervals_for_generator_v1(
         time, begin, bocpd_model_gen)
     return shocks, non_shocks
