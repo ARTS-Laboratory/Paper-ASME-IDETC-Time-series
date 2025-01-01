@@ -111,7 +111,7 @@ def expectation_maximization_generator(
         yield is_attack
 
 
-@njit(cache=True)
+@njit
 def close_enough(a, b):
     return np.allclose(a, b) and np.allclose(b, a)
 
