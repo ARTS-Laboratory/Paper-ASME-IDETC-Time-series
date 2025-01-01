@@ -11,6 +11,11 @@ from numba.core.extending import overload
 from tqdm import tqdm
 
 from fig_funcs.detection_plots import plot_shock
+try:
+    from online_detection.bocpd_cy import (calculate_prior_arr_cy, calculate_prior_arr_inplace_cy,
+        bayesian_online_changepoint_detection_deque_cy)
+except ImportError:
+    raise Warning('Expected Cython imports to be available.')
 from online_detection.model_helpers import detection_to_intervals_for_generator_v1
 from online_detection.normal_inverse_gamma import NormalInverseGammaRunLength, NormalInverseGamma
 from utils.read_data import get_data
@@ -50,88 +55,12 @@ def bayesian_online_changepoint_detection_v6_generator(data, mu, kappa, alpha, b
         yield is_attack
 
 
-def bayesian_online_changepoint_detection_deque_generator(data, mu, kappa, alpha, beta, lamb):
+def bayesian_online_changepoint_detection_deque_generator_v2(data, mu, kappa, alpha, beta, lamb):
     """ """
-    initial_params = NormalInverseGamma(
-        alpha=alpha, beta=beta, mu=mu, kappa=kappa)
-    my_data = np.asarray(data)
-    run_length = 1  # Iterations since last changepoint
-    maxes = deque((0,), maxlen=2)
-    run_lengths = deque((0,))
-    parameters = deque((initial_params,))
-    probabilities = deque((1.0,))
-    accumulator = 0.0
-    cps = 0
-    for event in my_data:
-        is_attack = False
-        calculate_probabilities_deque(event, lamb, parameters, run_lengths, probabilities)
-        # find and append max probability
-        max_idx, max_val = 0, probabilities[0]
-        for idx, val in zip(run_lengths, probabilities):
-            if val >= max_val:
-                max_idx = idx
-                max_val = val
-        maxes.append(max_idx)
-        if maxes[-1] < maxes[0]:
-            # event is an attack
-            is_attack = True
-            run_length, accumulator = update_attack_v4(event)
-            # reset params
-            parameters.clear()
-            parameters.append(NormalInverseGamma(
-                alpha=alpha, beta=beta, mu=mu, kappa=kappa))
-            probabilities.clear()
-            probabilities.append(1.0)
-            run_lengths.clear()
-            run_lengths.append(0)
-        else:
-            run_length, accumulator = update_no_attack_deque(
-                event, run_length, accumulator, parameters, alpha, beta, mu, kappa)
-        yield is_attack
-
-
-@njit
-def calculate_probabilities(idx, event, alpha, beta, mu, kappa, probabilities, lamb):
-    """ """
-    threshold = 1e-16
-    prior = calculate_prior(event, alpha, beta, mu, kappa)
-    new_probabilities = np.empty(len(probabilities) + 1)
-    calculate_probs_helper(
-        probabilities, prior, hazard_function(lamb),
-        new_probabilities)
-    threshold_filter = new_probabilities > threshold
-    threshold_filter[0] = True
-    new_probabilities = new_probabilities[threshold_filter]
-    normalize_probs_2(new_probabilities)
-    return new_probabilities
-
-
-@njit
-def calculate_probabilities_v2(event, alpha, beta, mu, kappa, probabilities, lamb, trunc_threshold=1e-16):
-    """ """
-    hazard = hazard_function(lamb)
-    threshold = trunc_threshold
-    priors = calculate_prior_arr(event, alpha, beta, mu, kappa)
-    new_probabilities = np.empty(probabilities.size + 1)
-    # Multiply probabilities by their priors
-    priors *= probabilities
-    new_probabilities[0] = priors.sum() * hazard
-    new_probabilities[1:] = priors * (1 - hazard)
-    # Normalize probabilities
-    prob_sum = new_probabilities.sum()
-    if prob_sum != 0.0:
-        new_probabilities /= prob_sum
-        # new_probabilities /= new_probabilities.sum()
-    # Truncate near zero values
-    trunc = new_probabilities < trunc_threshold
-    new_probabilities[trunc] = 0.0
-    # threshold_filter = new_probabilities > threshold
-    # threshold_filter[0] = True
-    # new_probabilities = new_probabilities[threshold_filter]
-    # threshold_filter = threshold_filter[1:]
-    # new_alpha, new_beta, new_mu, new_kappa = alpha[threshold_filter], beta[threshold_filter], mu[threshold_filter], kappa[threshold_filter]
-    new_alpha, new_beta, new_mu, new_kappa = alpha, beta, mu, kappa
-    return new_probabilities, new_alpha, new_beta, new_mu, new_kappa
+    predictions = bayesian_online_changepoint_detection_deque_cy(data, mu, kappa, alpha, beta, lamb)
+    print(predictions.shape)
+    for prediction in predictions:
+        yield prediction <= 0.05
 
 
 @profile
@@ -171,54 +100,6 @@ def calculate_probabilities_v3(event, alpha, beta, mu, kappa, run_lengths, proba
     # new_alpha, new_beta, new_mu, new_kappa = alpha, beta, mu, kappa
     return new_probabilities, new_alpha, new_beta, new_mu, new_kappa, new_run_lengths
 
-
-@profile
-def calculate_probabilities_deque(event: float, lamb: float, params: deque, run_lengths: deque, probabilities: deque, trunc_threshold=1e-16):
-    """ """
-    size_switch = 1_000
-    hazard = hazard_function(lamb)
-    arr_size = len(params)
-    if arr_size < size_switch:
-        # old option
-        # priors = calculate_prior_deque_list(event, params)
-        # new option
-        priors = calculate_prior_deque_list(event, {dataclasses.astuple(param) for param in params})
-    else:
-        priors = np.empty(arr_size)
-        calculate_prior_deque_ndarray(event, params, priors)
-    if isinstance(priors, list):
-        head = sum(priors) * hazard
-        neg_prob = 1 - hazard
-        tail = [prior * neg_prob for prior in priors]
-    elif isinstance(priors, np.ndarray):
-        head = priors.sum() * hazard
-        priors *= (1 - hazard)
-        tail = priors
-    # Update probabilities
-    for idx in range(arr_size):
-        probabilities[0] = tail[idx]
-        probabilities.rotate(1)
-        run_lengths[0] += 1
-        run_lengths.rotate(1)
-    probabilities.appendleft(head)
-    run_lengths.appendleft(0)
-    # Normalize vector
-    prob_sum = sum(probabilities)
-    if prob_sum != 0.0:
-        for idx in range(arr_size):
-            probabilities[0] /= prob_sum
-            probabilities.rotate(1)
-    # Truncate values near zero
-    probabilities.rotate(1)
-    for idx in range(arr_size):
-        if probabilities[0] < trunc_threshold:
-            probabilities.popleft()
-            params.popleft()
-            run_lengths.popleft()
-        else:
-            probabilities.rotate(1)
-            params.rotate(1)
-            run_lengths.rotate(1)
 
 
 
@@ -297,28 +178,6 @@ def update_no_attack_arr(event, run_length, cp, accumulator, alpha_arr, beta_arr
     alpha_p[0] = alpha
     beta_p[0] = beta
     return run_length_p, new_accumulator, alpha_p, beta_p, mu_p, kappa_p
-
-
-@profile
-def update_no_attack_deque(event: float, run_length: int, accumulator: float,
-                           params: deque, alpha: float, beta: float, mu: float, kappa: float):
-    """ Update if no attack was detected.
-
-
-    """
-    new_accumulator = event + accumulator
-    new_run_length = run_length + 1
-    for param in params:
-        kappa_plus = param.kappa + 1
-        param.beta += param.kappa * np.square(event - param.mu) / (2 * kappa_plus)
-        param.mu = (param.kappa * param.mu + event) / kappa_plus
-        param.alpha += 0.5
-        param.kappa += 1.0
-    params.appendleft(NormalInverseGamma(
-        alpha=alpha, beta=beta, mu=mu, kappa=kappa))
-    return new_run_length, new_accumulator
-
-
 
 
 @njit
