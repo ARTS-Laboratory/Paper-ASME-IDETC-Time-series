@@ -69,7 +69,12 @@ def calculate_probabilities_v3(
         event, alpha, beta, mu, kappa, run_lengths, probabilities, lamb, trunc_threshold=1e-16):
     """ """
     hazard = hazard_function(lamb)
-    priors = calculate_prior_arr_v1(event, alpha, beta, mu, kappa)
+    # Python version
+    priors = np.empty_like(alpha)
+    calculate_prior_arr_inplace(event, alpha, beta, mu, kappa, priors)
+    # Cython version
+    # priors_cy = np.empty_like(alpha)
+    # calculate_prior_arr_inplace_cy(event, alpha, beta, mu, kappa, priors_cy)
     new_probabilities = np.zeros(probabilities.size + 1)
     # here we define the type as uint32, this is arbitrary and might need to be changed later
     new_run_lengths = np.zeros(run_lengths.size + 1, dtype=np.uint32)
