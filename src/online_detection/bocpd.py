@@ -203,10 +203,19 @@ def calculate_prior_arr_inplace(point, alphas, betas, mus, kappas, out):
     # out /= scipy.special.beta(0.5, alphas)
 
 
-# @njit
-def calculate_prior_deque_ndarray(point, params, out):
-    for idx, param in enumerate(params):
-        out[idx] = calculate_prior_helper(point, param.alpha, param.beta, param.mu, param.kappa) / scipy.special.beta(0.5, param.alpha)
+@njit
+def calculate_prior_helper_inplace(point, alphas, betas, mus, kappas, out):
+    """ """
+    arr = np.empty((2, alphas.size))
+    denom = arr[0]
+    exponent = arr[1]
+    denom[:] = 2 * betas * (kappas + 1.0) / kappas
+    out[:] = (point - mus)**2 / denom
+    out += 1.0
+    # t_values **= -(alphas + 0.5)
+    exponent[:] = -(alphas + 0.5)
+    out **= exponent
+    out /= np.sqrt(denom)
 
 
 # @overload(scipy.special.beta)
