@@ -613,11 +613,24 @@ def read_model_config(config_file):
 
 
 
-def plot_metric_histogram(left_data, right_data, num_bins=32):
-    fig, ax = plt.subplots(ncols=2, sharey=True)
-    ax[0].hist(left_data, bins=num_bins)
-    ax[1].hist(right_data, bins=num_bins)
-    return fig
+def plot_metric_boxplot(left_data, right_data):
+    pass
+
+
+# def plot_metric_pair_matrix(left_data, right_data, metrics):
+#     num_metrics = len(metrics)
+#     fig, axes = plt.subplots(ncols=num_metrics, nrows=num_metrics)
+#     for idx in range(num_metrics):
+#         row_metric = metrics[idx]
+#         transform_arr = np.array([row_metric(window) for window in windows])
+#         left_transform = transform_arr[:bkps[0]]
+#         right_transform = transform_arr[bkps[0]:bkps[1]]
+#
+#         for jdx in range(num_metrics):
+#             col_metric = metrics[jdx]
+#             if idx != jdx:
+#                 ax = axes[idx, jdx]
+#                 ax.scatter()
 
 
 def profile():
