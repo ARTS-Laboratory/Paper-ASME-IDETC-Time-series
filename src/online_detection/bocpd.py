@@ -163,7 +163,7 @@ def calculate_prior_arr(point, alphas, betas, mus, kappas):
 def calculate_prior_arr_v1(point, alphas, betas, mus, kappas):
     """ Return student's T distribution PDF for given parameters of inverse gamma distribution."""
     t_values = calculate_prior_helper(point, alphas, betas, mus, kappas)
-    t_values /= scipy.special.beta(0.5, alphas)
+    t_values /= beta_numba(0.5, alphas)
     return t_values
 
     # # Old code
@@ -209,11 +209,12 @@ def calculate_prior_deque_ndarray(point, params, out):
         out[idx] = calculate_prior_helper(point, param.alpha, param.beta, param.mu, param.kappa) / scipy.special.beta(0.5, param.alpha)
 
 
-@overload(scipy.special.beta)
-def scipy_beta(a, b):
-    def scipy_beta_fn(a, b):
-        return scipy.special.beta(a, b)
-    return scipy_beta_fn
+# @overload(scipy.special.beta)
+# def scipy_beta(a, b):
+#     beta_vals = scipy.special.beta(a, b)
+#     def scipy_beta_fn(a, b):
+#         return beta_vals
+#     return scipy_beta_fn
 
 
 # @njit
