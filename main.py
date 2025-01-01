@@ -602,12 +602,9 @@ def profile():
 def run_from_config():
     """ """
     config_file = './src/configs/first_impact_config.toml'
-    # config_file = './src/configs/matlab_sims_config.toml'
     config_table = load_toml(config_file)
     my_data = get_data(config_table['file-path'])
-    # my_data = get_data_from_matlab(config_table['file-path'])
     time, data = my_data[:, 0], my_data[:, 1]
-    # time, data = my_data[:, 0], my_data[:, 2]
     algs = read_model_config(config_file)
     plot_detection_1(time, data, algs)
 
