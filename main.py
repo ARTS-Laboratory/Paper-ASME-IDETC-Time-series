@@ -138,25 +138,80 @@ def plot_offline_detections(time, data, save_root=None):
     plt.close(ground_truth_fig)
 
 
-def write_metric_table(time, ground, predictions, algorithm_name, signal_name):
+def write_metric_table(time, ground, predictions_list, algorithm_names, signal_names):
     """ """
-    ids = (('algorithm', [algorithm_name]), ('signal_id', [signal_name]))
+    ids = (('signal_id', signal_names), ('algorithm', algorithm_names))
     metric_dict = dict(ids)
-    metric_names = ('accuracy', 'precision', 'recall', 'F1 score', 'detection delay')
+    # Calculate scores
+    metric_names = ('accuracy', 'precision', 'recall', 'f1 score', 'detection delay')
     metric_funcs = (
         sklearn.metrics.accuracy_score, sklearn.metrics.precision_score,
         sklearn.metrics.recall_score, sklearn.metrics.f1_score)
-    metrics = {
-        metric_name: [metric_func(ground, predictions)] for
-        metric_name, metric_func in zip(metric_names, metric_funcs)}
+    metrics = dict()
+    for metric_name, metric_func in zip(metric_names, metric_funcs):
+        scores = [metric_func(ground, predictions) for predictions in predictions_list]
+        metrics[metric_name] = scores
+    earliest_correct = [get_earliest_correct(time, ground, predictions) for predictions in predictions_list]
+    delay = [get_detect_delay(time, ground, earliest) for earliest in earliest_correct]
+    metrics['earliest correct'] = earliest_correct
+    metrics['delay'] = delay
+    # Combine scores and rest of table
     metric_dict.update(metrics)
     df = pd.DataFrame(metric_dict)
     print(df)
     return df
 
 
+def get_earliest_correct(time, ground, predictions):
+    """ """
+    true_positive_indices = np.logical_and(ground.astype(bool), predictions.astype(bool))
+    if true_positive_indices.any():
+        earliest_correct = time[true_positive_indices][0]
+    else:
+        earliest_correct = np.inf
+    return earliest_correct
+
+
+def get_detect_delay(time, ground: np.ndarray, earliest_correct):
+    """ """
+    if ground.astype(bool).any():
+        first = time[np.nonzero(ground.astype(bool))][0]
+        return earliest_correct - first
+    return np.inf
+
+
+def get_scores(time, ground, predictions):
+    """ Return metric score for predicted shock prediction given comparison."""
+    # Calculate scores
+    f1_score = sklearn.metrics.f1_score(ground, predictions)
+    precision = sklearn.metrics.precision_score(ground, predictions)
+    recall = sklearn.metrics.recall_score(ground, predictions)
+    accuracy = sklearn.metrics.accuracy_score(ground, predictions)
+    # Price is right score
+    true_positive_indices = np.logical_and(ground.astype(bool), predictions.astype(bool))
+    if true_positive_indices.any():
+        earliest_correct = time[true_positive_indices][0]
+        first_ground = time[np.nonzero(ground.astype(bool))][0]
+        delay = earliest_correct - first_ground
+        print(f'Shock first correctly detected at time: {earliest_correct}')
+        print(f'Earliest fault from ground truth: {first_ground}. Found with delay: {delay}')
+    else:
+        earliest_correct = np.inf
+        delay = np.inf
+        print('No predictions aligned with ground truth.')
+    scores = {
+        'f1_score': f1_score,
+        'precision': precision,
+        'recall': recall,
+        'accuracy': accuracy,
+        'detection delay': delay,
+        'earliest correct': earliest_correct
+    }
+    return scores
+
+
 def print_scores(time, ground, predictions):
-    """ Print metric scores for predicted shock prediction given comparator."""
+    """ Print metric scores for predicted shock prediction given comparison."""
     # Calculate scores
     f1_score = sklearn.metrics.f1_score(ground, predictions)
     precision = sklearn.metrics.precision_score(ground, predictions)
@@ -483,7 +538,12 @@ def plot_detection_1(time, data, models):
     # Evaluation stuff
     (true_shocks, true_nonshocks) = make_ground_truth(time, data)
     ground = convert_interval_indices_to_full_arr(true_shocks, true_nonshocks, len(time))
+    predictions = list()
+    algorithm_names = list()
+    signal_names = list()
+    signal_idx = 0
     for model in models:
+        signal_idx += 1
         match model.name:
             case 'bocpd':
                 shocks, non_shocks = get_bocpd_v5_from_generator(
@@ -543,8 +603,37 @@ def plot_detection_1(time, data, models):
                 print_scores(time, ground, pred)
             case _:
                 raise NotImplementedError
+        predictions.append(pred)
+        algorithm_names.append(model.name)
+        signal_names.append(signal_idx)
+    df: pd.DataFrame = write_metric_table(time, ground, predictions, algorithm_names, signal_names)
+    print(df.head())
+    save_folder = './figures'
+    tex_table: pd.DataFrame = df.iloc[:,1:]
+    # convert the columns from s to ms
+    tex_table.loc[:, 'earliest correct'] *= 1_000
+    tex_table.loc[:, 'delay'] *= 1_000
+    tex_table.rename({
+        'earliest correct': 'earliest correct (ms)',
+        'delay': 'detection delay (ms)'})
+    write_frame_to_latex(df.iloc[:,1:], 'table.tex', save_folder)
+
+def write_frame_to_latex(frame: pd.DataFrame, filename, folder=None):
+    """ Writes reference frame and prediction frame to LaTeX files.
+
+    Parameters
+    ----------
+    :param pd.DataFrame frame: Pandas Dataframe containing reference data metrics.
+    :param filename: File name to write reference data LaTeX file.
+    :type filename: str or None
+    :param folder: Optional folder to prefix file names.
+    :type folder: str or None
 
 
+    """
+    tmp_folder = folder if folder else ''
+    frame.style.format(precision=3).hide(axis='index').to_latex(
+        buf=Path(tmp_folder, filename), hrules=True)
 
 def read_model_config(config_file):
     """ Parse config file for models."""
