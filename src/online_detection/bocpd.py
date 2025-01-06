@@ -1,6 +1,7 @@
 import dataclasses
 import math
 import scipy
+import warnings
 
 import numpy as np
 
@@ -14,12 +15,16 @@ from fig_funcs.detection_plots import plot_shock
 try:
     from online_detection.bocpd_cy import (calculate_prior_arr_cy, calculate_prior_arr_inplace_cy,
         bayesian_online_changepoint_detection_deque_cy)
+except ModuleNotFoundError:
+    warnings.warn('Cython module not included in environment.')
 except ImportError:
-    raise Warning('Expected Cython imports to be available.')
+    warnings.warn('Expected Cython imports to be available.')
 try:
     from tda_project_rusty import run_bocpd, run_expect_max
+except ModuleNotFoundError:
+    warnings.warn('Rust module not included in environment.')
 except ImportError:
-    raise Warning('Expected rust extensions to be available.')
+    warnings.warn('Expected rust extensions to be available.')
 from online_detection.model_helpers import detection_to_intervals_for_generator_v1
 from utils.read_data import get_data
 
