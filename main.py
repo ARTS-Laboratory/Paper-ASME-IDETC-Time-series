@@ -21,8 +21,8 @@ from fig_funcs.detection_plots import plot_shock, interval_histogram, raw_histog
 from fig_funcs.histograms import plot_metric_histogram
 from fig_funcs.rupture_changepoint_plots import plot_breaks
 from fig_funcs.signal_plots import plot_signal, plot_signal_fft, plot_signal_power_spectrum, \
-    power_spectra_sections, signal_with_inset_axes
-from fig_funcs.spectrogram_plots import get_spectrogram, plot_spectrogram
+    power_spectra_sections, signal_with_inset_axes, signal_with_inset_axes_for_paper, plot_signal_for_display
+from fig_funcs.spectrogram_plots import get_spectrogram, plot_spectrogram_for_display, plot_spectrogram_for_paper
 from offline_detection import bottom_up, binary_segmentation, dynamic_programming
 from online_detection.bocpd import get_bocpd_v5_from_generator
 from online_detection.cusum import get_plot_cusum, get_cusum_revised, cusum, cusum_alg, cusum_alg_v1
@@ -50,7 +50,7 @@ def make_stacked_power_spectrum_plot(time, data, save_root=None):
 def make_signal_overlay_plot(time, data, save_root=None):
     """ """
     save_dir = save_path(save_root)
-    fig = signal_with_inset_axes(time, data, ms=True)
+    fig = signal_with_inset_axes_for_paper(time, data, ms=True)
     plt.savefig(Path(save_dir, 'signal_plots', 'inset_signal.png'), dpi=350)
     plt.close(fig)
 
@@ -58,36 +58,38 @@ def make_signal_overlay_plot(time, data, save_root=None):
 def make_signal_plots(time, data, save_root=None):
     """ """
     save_dir = Path(save_path(save_root), 'signal_plots')
+    my_dpi = 350
+    fig_size = (6.5, 2)
     # Plots for whole signal
-    fig = plot_signal(time, data, ms=True)
-    plt.savefig(Path(save_dir, 'signal_fig.png'), dpi=350)
+    fig = plot_signal_for_display(time, data, ms=True, fig_size=fig_size)
+    plt.savefig(Path(save_dir, 'signal_fig.png'), dpi=my_dpi)
     plt.close(fig)
     normal_fft_fig = plot_signal_fft(time, data)
     plt.savefig(Path(save_dir, 'fft_fig.png'))
     plt.close(normal_fft_fig)
     normal_per_fig = plot_signal_power_spectrum(time, data)
-    plt.savefig(Path(save_dir, 'power_spectrum_fig.png'), dpi=350)
+    plt.savefig(Path(save_dir, 'power_spectrum_fig.png'), dpi=my_dpi)
     plt.close(normal_per_fig)
     # Plots for safe section of signal
-    normal_fig = plot_signal(time[:100_000], data[:100_000], ms=True)
-    plt.savefig(Path(save_dir, 'safe_signal_fig.png'), dpi=350)
+    normal_fig = plot_signal_for_display(time[:100_000], data[:100_000], ms=True)
+    plt.savefig(Path(save_dir, 'safe_signal_fig.png'), dpi=my_dpi)
     plt.close(normal_fig)
     normal_per_fig = plot_signal_power_spectrum(time[:100_000], data[:100_000])
-    plt.savefig(Path(save_dir, 'safe_power_spectrum_fig.png'), dpi=350)
+    plt.savefig(Path(save_dir, 'safe_power_spectrum_fig.png'), dpi=my_dpi)
     plt.close(normal_per_fig)
     # Plots for shock section of signal
-    shock_fig = plot_signal(time[200_000:400_000], data[200_000:400_000], ms=True)
-    plt.savefig(Path(save_dir, 'shock_signal_fig.png'), dpi=350)
+    shock_fig = plot_signal_for_display(time[200_000:400_000], data[200_000:400_000], ms=True)
+    plt.savefig(Path(save_dir, 'shock_signal_fig.png'), dpi=my_dpi)
     plt.close(shock_fig)
     normal_per_fig = plot_signal_power_spectrum(time[200_000:400_000], data[200_000:400_000])
-    plt.savefig(Path(save_dir, 'shock_power_spectrum_fig.png'), dpi=350)
+    plt.savefig(Path(save_dir, 'shock_power_spectrum_fig.png'), dpi=my_dpi)
     plt.close(normal_per_fig)
     # Plots for post shock section of signal
-    post_shock_fig = plot_signal(time[400_000:], data[400_000:], ms=True)
-    plt.savefig(Path(save_dir, 'post_shock_signal_fig.png'), dpi=350)
+    post_shock_fig = plot_signal_for_display(time[400_000:], data[400_000:], ms=True)
+    plt.savefig(Path(save_dir, 'post_shock_signal_fig.png'), dpi=my_dpi)
     plt.close(post_shock_fig)
     normal_per_fig = plot_signal_power_spectrum(time[400_000:], data[400_000:])
-    plt.savefig(Path(save_dir, 'post_shock_power_spectrum_fig.png'), dpi=350)
+    plt.savefig(Path(save_dir, 'post_shock_power_spectrum_fig.png'), dpi=my_dpi)
     plt.close(normal_per_fig)
     # normal_fft_fig_2 = plot_signal_fft(time[:100_000], data[:100_000])
     # normal_per_fig_2 = plot_signal_power_spectrum(time[:100_000], data[:100_000])
@@ -99,10 +101,14 @@ def make_spectrogram_plots(time, data, save_root=None):
     """ Make spectrogram figures for data."""
     save_dir = save_path(save_root)
     sxx, times, freqs = get_spectrogram(time, data)
-    plot_spectrogram(sxx, times, freqs, to_ms=True, to_db=True)
-    plt.savefig(Path(save_dir, 'spectrogram.pdf'))
-    plt.savefig(Path(save_dir, 'spectrogram.png'), dpi=350)
-    plt.close()
+    display_fig = plot_spectrogram_for_display(sxx, times, freqs, to_ms=True, to_db=True)
+    display_fig.savefig(Path(save_dir, 'spectrogram.pdf'))
+    display_fig.savefig(Path(save_dir, 'spectrogram.png'), dpi=350)
+    plt.close(display_fig)
+    paper_fig = plot_spectrogram_for_paper(sxx, times, freqs, to_ms=True, to_db=True)
+    paper_fig.savefig(Path(save_dir, 'spectrogram_fig.pdf'))
+    paper_fig.savefig(Path(save_dir, 'spectrogram_fig.png'), dpi=350)
+    plt.close(paper_fig)
 
 
 def plot_signals(file_path, save_root=None):

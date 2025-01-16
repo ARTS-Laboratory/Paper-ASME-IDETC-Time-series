@@ -30,7 +30,7 @@ def temp_ruptures():
     my_data = get_data(file_1)
     time, data = my_data[:, 0], my_data[:, 1]
     time_step = metrics.sampling_frequency(data)
-    sig_fig = signal_plots.plot_signal(time, data)
+    sig_fig = signal_plots.plot_signal_for_display(time, data)
     fft_fig = signal_plots.plot_signal_fft(time, data)
     # plt.show()
     # exit()
@@ -49,7 +49,7 @@ def get_show_features():
     time_step = metrics.sampling_frequency(data)
     abs_val = metrics.abs_mean(data)
     # Let's look at the data
-    sig_fig = signal_plots.plot_signal(time, data)
+    sig_fig = signal_plots.plot_signal_for_display(time, data)
 
     fft_fig = signal_plots.plot_signal_fft(time, data)
     # plt.show()
