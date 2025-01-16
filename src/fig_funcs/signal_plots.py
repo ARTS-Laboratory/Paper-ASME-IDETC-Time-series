@@ -5,19 +5,31 @@ import matplotlib.pyplot as plt
 from utils import metrics
 
 
-def plot_signal(time, data, ms=False, fig_size=None):
-    fig = plt.figure(layout='constrained') if fig_size is None else plt.figure(figsize=fig_size, layout='constrained')
+def plot_signal(ax, time, data, ms=False):
     ylabel = 'acceleration (m/s\u00b2)'
     if ms:
         xlabel = 'time (ms)'
-        plt.plot(time * 1000, data)
-        plt.xlim([1000 * time[0], 1000 * time[-1]])
+        ax.plot(time * 1000, data)
+        ax.set_xlim([1000 * time[0], 1000 * time[-1]])
     else:
         xlabel = 'time (s)'
-        plt.plot(time, data)
-        plt.xlim([time[0], time[-1]])
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+        ax.plot(time, data)
+        ax.set_xlim([time[0], time[-1]])
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    return ax
+
+
+def plot_signal_for_display(time, data, ms=False, fig_size=None):
+    """ """
+    fig, ax = plt.subplots(figsize=fig_size, layout='constrained')
+    plot_signal(ax, time, data, ms=ms)
+    return fig
+
+def plot_signal_for_paper(time, data, ms=False, fig_size=None):
+    """ """
+    fig, ax = plt.subplots(figsize=(fig_size))
+    plot_signal(ax, time, data, ms=ms)
     return fig
 
 
@@ -65,7 +77,7 @@ def signal_with_overlays(time, data):
     fig_size_2 = (2.4375, 0.5)
 
     # Plots for whole signal
-    fig = plot_signal(time, data, ms=True, fig_size=fig_size)
+    fig = plot_signal_for_display(time, data, ms=True, fig_size=fig_size)
     plt.savefig('figures/full_signal.pdf')
     # y_lim = (-15, 15)
     y_lim = (min(min(data[:100_000]), min(data[400_000:])), max(max(data[:100_000]), max(data[400_000:])))
@@ -80,12 +92,8 @@ def signal_with_overlays(time, data):
     # plt.close()
 
 
-def signal_with_inset_axes(time, data, ms=True):
+def signal_with_inset_axes(ax: plt.Axes, time, data, ms=True):
     """ """
-    fig_size = (6.5, 2)
-    fig_size_2 = (2.4375, 0.5)
-    fig, ax = plt.subplots(figsize=fig_size, layout='constrained')
-    # Plots for whole signal
     ylabel = 'acceleration (m/s\u00b2)'
     if ms:
         xlabel = 'time (ms)'
@@ -93,28 +101,50 @@ def signal_with_inset_axes(time, data, ms=True):
     else:
         xlabel = 'time (s)'
         plot_time = time
-    plt.plot(plot_time, data, linewidth=1.025)
-    plt.xlim([plot_time[0], plot_time[-1]])
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+    ax.plot(plot_time, data, linewidth=1.025)
+    ax.set_xlim([plot_time[0], plot_time[-1]])
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
     # Insets
     x1, x2 = plot_time[0], plot_time[100_000]
     x3, x4 = plot_time[-100_000], plot_time[-1]
     y1, y2 = -15, 15
+    inset_width, inset_height = 0.425, 0.25
+    box_1_x, box_1_y = 0.0625, 1-0.275
+    box_2_x, box_2_y = 1-0.435, 1-0.275
     # y1, y2 = (min(min(data[:100_000]), min(data[400_000:])), max(max(data[:100_000]), max(data[400_000:])))
-    axins = ax.inset_axes([0.0625, 1-0.275, 0.425, 0.25], xlim=(x1, x2), ylim=(y1, y2), xticklabels=[])
-    axins_2 = ax.inset_axes([1-0.435, 1-0.275, 0.425, 0.25], xlim=(x3, x4), ylim=(y1, y2), xticklabels=[], yticklabels=[])
-    axins.plot(plot_time, data, linewidth=1.025)
-    axins_2.plot(plot_time, data, linewidth=1.025)
-    _, lines = ax.indicate_inset_zoom(axins, edgecolor='black')
+    axins = ax.inset_axes(
+        (box_1_x, box_1_y, inset_width, inset_height),
+        xlim=(x1, x2), ylim=(y1, y2), xticklabels=[])
+    axins_2 = ax.inset_axes(
+        (box_2_x, box_2_y, inset_width, inset_height),
+        xlim=(x3, x4), ylim=(y1, y2), xticklabels=[], yticklabels=[])
+    linewidth = 1.025
+    edge_color = 'black'
+    axins.plot(plot_time, data, linewidth=linewidth)
+    axins_2.plot(plot_time, data, linewidth=linewidth)
+    _, lines = ax.indicate_inset_zoom(axins, edgecolor=edge_color)
     lines[0].set_visible(True)
     lines[1].set_visible(False)
-    _, lines_2 = ax.indicate_inset_zoom(axins_2, edgecolor='black')
+    _, lines_2 = ax.indicate_inset_zoom(axins_2, edgecolor=edge_color)
     lines_2[2].set_visible(True)
     lines_2[3].set_visible(False)
-    plt.savefig('figures/inset_signal.pdf')
-    plt.savefig('figures/inset_signal.png', dpi=350)
-    # plt.show()
+    return ax
+
+
+def signal_with_inset_axes_for_paper(time, data, ms=True):
+    """ """
+    fig_size = (6.5, 2)
+    fig, ax = plt.subplots(figsize=fig_size, layout='constrained')
+    signal_with_inset_axes(ax, time, data, ms=ms)
+    return fig
+
+
+def signal_with_inset_axes_for_display(time, data, ms=True):
+    fig_size = (6.5, 2)
+    fig, ax = plt.subplots(figsize=fig_size, layout='constrained')
+    signal_with_inset_axes(ax, time, data, ms=ms)
+    return fig
 
 
 def plot_power_subplot(ax, time, data):
