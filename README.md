@@ -3,6 +3,7 @@
 
 Program comes with option to run models through config file.
 ## Packages
+* jinja2
 * matplotlib
 * more_itertools
 * numpy
