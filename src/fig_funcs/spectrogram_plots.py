@@ -38,7 +38,37 @@ def get_spectrogram(time, data, **kwargs):
     # return fig
 
 
-def plot_spectrogram(sxx, times, freqs, to_ms=False, to_db=False):
+def plot_spectrogram(ax: plt.Axes, sxx, times, freqs, to_ms=False, to_db=False):
+    """ """
+    temp_sxx = sxx if not to_db else 10 * np.log10(sxx)
+    freq_lim = 2_500
+    freq_indices = freqs <= freq_lim
+    if to_ms:
+        plt.pcolormesh(times * 1_000, freqs[freq_indices] / 1_000, temp_sxx[freq_indices, :], shading='nearest')
+        x_label = 'time (ms)'
+        y_label = 'frequency (kHz)'
+    else:
+        plt.pcolormesh(times, freqs[freq_indices], temp_sxx[freq_indices, :], shading='nearest')
+        x_label = 'time (s)'
+        y_label = 'frequency (Hz)'
+    ax.set_ylabel(y_label)
+    ax.set_xlabel(x_label)
+    # plt.colorbar(label='power (m/s\u00b2)\u00b2 (dB)')
+    # if to_db:
+    #     db_min, db_max = -48, None
+    #     plt.clim(db_min, db_max)
+    return ax
+
+def spectrogram_colorbar(fig, location=None, orientation=None, label=None, db_range=None):
+    """ Plot colorbar for spectrogram."""
+    plt.colorbar(label='power (m/s\u00b2)\u00b2 (dB)', location=location, orientation=orientation)
+    if db_range is not None:
+        db_min, db_max = db_range  # -48, None
+        plt.clim(db_min, db_max)
+    return fig
+
+
+def plot_spectrogram_for_display(sxx, times, freqs, to_ms=False, to_db=False):
     """ """
     # print(f'Time shape: {times.shape}, Frequency shape: {freqs.shape}, spectrum shape: {sxx.shape}')
     fig = plt.figure()
@@ -60,3 +90,14 @@ def plot_spectrogram(sxx, times, freqs, to_ms=False, to_db=False):
         db_min, db_max = -48, None
         plt.clim(db_min, db_max)
     return fig
+
+
+def plot_spectrogram_for_paper(sxx, times, freqs, to_ms=False, to_db=False):
+    fig, ax = plt.subplots(figsize=(6.5, 3), layout='constrained')
+    plot_spectrogram(ax, sxx, times, freqs, to_ms, to_db)
+    db_range = (-48, None) if to_db else None
+    spectrogram_colorbar(
+        fig, location='top', orientation='horizontal',
+        label='power (m/s\u00b2)\u00b2 (dB)', db_range=db_range)
+    return fig
+
