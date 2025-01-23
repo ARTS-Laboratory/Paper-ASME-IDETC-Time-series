@@ -43,7 +43,6 @@ def grey_model(data, window_size=1, c=3, c_ratio=300):
     return
 
 
-@njit
 def grey_model_generator(data, window_size=1, c=3, c_ratio=300):
     """ Return Grey Model predictions for given data.
 
@@ -264,7 +263,7 @@ def grey_incidence_degree(val_1, val_2, c=3.0):
     # return 1 / ( 1.0 + 0.01 * abs(val_1 - val_2)/val_1)
 
 
-@njit
+# @njit
 def grey_incidence_degree_ratio(val_1, val_2, c=1.0):
     return 1.0 / (1.0 + c * abs(val_1 - val_2))
 
