@@ -1,6 +1,8 @@
 import math
 
 import numpy as np
+
+from collections import Counter
 from numba import njit
 from tqdm import tqdm
 
@@ -52,6 +54,7 @@ def grey_model_generator(data, window_size=1, c=3, c_ratio=300):
         :param float c_ratio: Constant multiplier for degree of ratio grey incidence.
         :returns:
         :rtype: None"""
+    cps = 0
     sample_arr = np.empty((3, window_size))
     window_1 = sample_arr[0]
     x_1 = sample_arr[1]
@@ -80,8 +83,13 @@ def grey_model_generator(data, window_size=1, c=3, c_ratio=300):
         rel_degree = grey_incidence_degree(s_1_rel_dist, s_2_rel_dist, c=c_ratio)
         # attack_likely = degree <= 0.5 or degree_ratio <= 0.5
         attack_likely = degree <= 0.5 or rel_degree <= 0.5
+        if attack_likely:
+            cps += 1
         # attack_likely = min(degree, rel_degree) <= 0.5
         yield attack_likely
+    print(cps)
+
+
 def grey_model_generator_2(data):
     alp = 0.5  ##whitenization amount
     ws = 3  ##window size-compate vectors of 4 values (so similar to EM)
