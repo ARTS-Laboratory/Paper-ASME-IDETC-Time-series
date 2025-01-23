@@ -83,7 +83,61 @@ def grey_model_generator(data, window_size=1, c=3, c_ratio=300):
         attack_likely = degree <= 0.5 or rel_degree <= 0.5
         # attack_likely = min(degree, rel_degree) <= 0.5
         yield attack_likely
+def grey_model_generator_2(data):
+    alp = 0.5  ##whitenization amount
+    ws = 3  ##window size-compate vectors of 4 values (so similar to EM)
+    threshold = 0.15 # 0.05  ## related to sensitivity-threshold
+    c = data[0]  ## constant to avoid 0 division in relative grey indices
 
+    # include if we would like to record the grey indices
+    # e=[]
+    # ep=[]
+    detect = []
+    detectp = []
+
+    for i in range(1, len(data)):
+
+        X = list(range(0, ws + 1))
+        Z = list(range(0, ws + 1))
+
+        for j in range(1,
+                       ws + 1):  ##this loop is for whitenized values of vector values then compare two consecutive vectors of window size=4
+
+            X[j] = data[i] + X[j - 1]
+            Z[j] = alp * X[j] + (1 - alp) * X[j - 1]
+
+        s = 0
+        sp = 0
+
+        for k in range(1, ws):  ####calculate grey indices with L1 loss
+            s = s + abs(Z[k] - Z[k - 1])
+            sp = sp + abs((Z[k] + c) / (Z[0] + c) - (Z[k - 1] + c) / (Z[0] + c))
+
+        s = s + 0.5 * abs(Z[ws] - Z[ws - 1])
+        sp = sp + 0.5 * abs((Z[ws] + c) / (Z[0] + c) - (Z[ws - 1] + c) / (Z[0] + c))
+
+        # we can record the grey indices if we want
+        # e.append(1/(1+0.05*s))
+        # ep.append(1/(1+0.05*sp))
+
+        if (1 / (1 + threshold * s)) < threshold:  ###if we have change or not-add a large value for visualization-500
+            detect.append(500)
+        else:
+            detect.append(0)
+
+        ##checking if combiantion with relative grey indice is better?
+        if (0.5 * (1 / (1 + threshold * sp)) + 0.5 * (1 / (1 + threshold * s))) < threshold:
+            detectp.append(500)
+        else:
+            detectp.append(0)
+
+        # change_likely = (1 / (1 + threshold * s)) < threshold
+        # change_likely = (0.5 * (1 / (1 + threshold * sp)) + 0.5 * (1 / (1 + threshold * s))) < threshold
+        change_likely = (1 / (1 + threshold * sp)) < threshold or (1 / (1 + threshold * s)) < threshold
+        yield change_likely
+
+    # print(Counter(detect))
+    # print(Counter(detectp))
 
 @njit
 def accumulation_sequence(window: np.ndarray):
@@ -286,6 +340,14 @@ def get_grey_model_from_generator(time, data,  window_size=1, c=3, c_ratio=3, sh
     non_shocks = [] if non_shock_intervals is None else non_shock_intervals
     my_data = np.abs(data)
     begin = 0
+    # if with_progress:
+    #     grey_model_gen = tqdm(
+    #         grey_model_generator_2(
+    #             my_data),
+    #         total=len(data)-window_size)
+    # else:
+    #     grey_model_gen = grey_model_generator_2(
+    #         my_data)
     if with_progress:
         grey_model_gen = tqdm(
             grey_model_generator(
