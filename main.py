@@ -736,6 +736,7 @@ def profile():
 
 def run_from_config():
     """ """
+    set_rc_params()
     config_file = './src/configs/first_impact_config.toml'
     config_table = load_toml(config_file)
     my_data = get_data(config_table['file-path'])
