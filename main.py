@@ -635,7 +635,7 @@ def write_frame_to_latex(frame: pd.DataFrame, filename, folder=None):
     :param filename: File name to write reference data LaTeX file.
     :type filename: str or None
     :param folder: Optional folder to prefix file names.
-    :type folder: str or None
+    :type folder: Path or str or None
 
 
     """
