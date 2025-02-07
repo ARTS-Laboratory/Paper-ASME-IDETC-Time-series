@@ -103,15 +103,16 @@ def signal_with_inset_axes(ax: plt.Axes, time, data, ms=True):
         plot_time = time
     ax.plot(plot_time, data, linewidth=1.025)
     ax.set_xlim([plot_time[0], plot_time[-1]])
+    ax.set_ylim((-200, 200))
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     # Insets
-    x1, x2 = plot_time[0], plot_time[100_000]
-    x3, x4 = plot_time[-100_000], plot_time[-1]
-    y1, y2 = -15, 15
-    inset_width, inset_height = 0.425, 0.25
-    box_1_x, box_1_y = 0.0625, 1-0.275
-    box_2_x, box_2_y = 1-0.435, 1-0.275
+    x1, x2 = plot_time[10_000], plot_time[20_000]
+    x3, x4 = plot_time[-10_001], plot_time[-1]
+    y1, y2 = -2, 2
+    inset_width, inset_height = 0.275, 0.25
+    box_1_x, box_1_y = 0.0625, 1-0.295
+    box_2_x, box_2_y = 1-0.425, 1-0.295
     # y1, y2 = (min(min(data[:100_000]), min(data[400_000:])), max(max(data[:100_000]), max(data[400_000:])))
     axins = ax.inset_axes(
         (box_1_x, box_1_y, inset_width, inset_height),
