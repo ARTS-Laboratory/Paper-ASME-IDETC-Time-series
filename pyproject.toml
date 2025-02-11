@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "change-point-detection"
+version = "2025.0.0"
+dependencies = [
+    "matplotlib",
+    "more_itertools",
+    "numba", # this should be optional ideally, but idk how to include optionally
+    "numpy",
+    "pandas",
+    "scikit-learn",
+    "scipy",
+    "ruptures",
+    "tomlkit",
+    "tqdm"
+]
+
+[project.optional-dependencies]
+profiling = [
+    "line_profiler",
+    "snakeviz",
+    "jinja2"
+]
+#progress = [
+#    "tqdm"
+#]
+cython = [
+    "cython"
+]
