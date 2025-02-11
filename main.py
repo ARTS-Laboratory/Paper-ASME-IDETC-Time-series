@@ -554,7 +554,7 @@ def plot_detection_1(time, data, models):
                 shocks, non_shocks = get_bocpd_v5_from_generator(
                     time, data, **asdict(model.hyperparameters),
                     with_progress=model.with_progress)
-                detection_fig = plot_shock(time, data, shocks, non_shocks)
+                detection_fig = plot_shock(time, data, shocks, non_shocks, to_ms=True)
                 plt.savefig(Path(model.save_path, 'bocpd_fig.png'), dpi=350)
                 plt.close(detection_fig)
                 pred = intervals_to_dense_arr(time, shocks, non_shocks)
