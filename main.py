@@ -1,3 +1,4 @@
+import argparse
 import math
 import os
 from dataclasses import asdict
@@ -741,10 +742,66 @@ def run_from_config():
     set_rc_params()
     config_file = './src/configs/first_impact_config.toml'
     config_table = load_toml(config_file)
-    my_data = get_data(config_table['file-path'])
-    time, data = my_data[:, 0], my_data[:, 1]
+    time, data = load_signals(Path(config_table['file-path']))
     algs = read_model_config(config_file)
-    plot_detection_1(time, data, algs)
+    df = plot_detection_1(time, data, algs)
+    # Write data frame for LaTeX
+    tex_table = format_frame_for_latex(df)
+    save_folder = Path(os.curdir, 'figures', '2025-02-11', 'tables')
+    save_name = config_table['metric-table']['save-name']
+    write_frame_to_latex(tex_table, save_name, save_folder)
+
+
+
+def get_args():
+    """ Get args and parse"""
+    parse = argparse.ArgumentParser()
+    parse.add_argument('--config_file')
+    subparsers = parse.add_subparsers()
+    parser_analyze = subparsers.add_parser('analyze')
+    parser_online = subparsers.add_parser('online')
+    parser_offline = subparsers.add_parser('offline')
+    args = parse.parse_args()
+
+
+def load_signals(file_path: (Path | str)) -> tuple[np.ndarray, np.ndarray]:
+    """ Load signals in from file."""
+    if isinstance(file_path, Path):
+        my_path = file_path
+    elif isinstance(file_path, str):
+        my_path = Path(file_path)
+    else:
+        raise TypeError('file_path must be a string or Path')
+    match my_path.suffix:
+        case '.txt':
+            my_data = get_data(file_path)
+        case '.npy':
+            my_data = np.load(file_path)
+        case _:
+            raise NotImplementedError
+    time, data = my_data[:, 0], my_data[:, 1]
+    return time, data
+
+
+def shorten_signals(time_vec, data_vec):
+    """ Save time and data vector stored in file as numpy arrays, return arrays."""
+    idx = 100_000 # we want to skip the first 100,000 points
+    new_time, new_data = time_vec[idx:], data_vec[idx:]
+    new_time -= np.min(new_time)  # set first element to 0, shift all time slots by same amount
+    return new_time, new_data
+
+
+def save_signals(time_vec, data_vec, save_path):
+    """ Save time and data vector as numpy array."""
+    # Recombine time and data into one 2D array and save to file
+    np.save(save_path, np.column_stack((time_vec, data_vec)))
+
+
+def process_data(file_path, out_path):
+    """ """
+    time_vec, data_vec = load_signals(file_path)
+    short_time, short_data = shorten_signals(time_vec, data_vec)
+    save_signals(short_time, short_data, out_path)
 
 
 def main():
