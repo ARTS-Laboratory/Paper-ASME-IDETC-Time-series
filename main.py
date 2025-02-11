@@ -112,11 +112,9 @@ def make_spectrogram_plots(time, data, save_root=None):
     plt.close(paper_fig)
 
 
-def plot_signals(file_path, save_root=None):
+def plot_signals(time, data, save_root=None):
     """ """
     save_dir = save_path(save_root)
-    my_data = get_data(file_path)
-    time, data = my_data[:, 0], my_data[:, 1]
     make_signal_plots(time, data, save_root=save_dir)
     make_spectrogram_plots(time, data, save_root=save_dir)
 
@@ -757,7 +755,8 @@ def main():
     # make_signal_overlay_plot(time, data, save_root=save_dir)
     # make_stacked_power_spectrum_plot(time, data)
     # plt.show()
-    # plot_signals(file_path, save_dir)
+    # Signal plots (raw time-series, fft, spectrogram)
+    # plot_signals(time, data, save_dir)
     # plot_detections(time, data, save_dir)
     # data_transformations(data)
     plt.show()
