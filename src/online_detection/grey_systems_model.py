@@ -7,7 +7,8 @@ from numba import njit
 from tqdm import tqdm
 
 from fig_funcs.detection_plots import plot_shock
-from online_detection.model_helpers import detection_to_intervals_for_generator_v1
+from online_detection.model_helpers import detection_to_intervals_for_generator_v1, \
+    detection_to_intervals_for_generator_v1_with_progress
 from utils.read_data import get_data
 
 
@@ -347,6 +348,23 @@ def get_grey_model_from_generator(time, data,  window_size=1, c=3, c_ratio=3, sh
     non_shocks = [] if non_shock_intervals is None else non_shock_intervals
     my_data = np.abs(data)
     begin = 0
+    grey_version = 1
+    match grey_version:
+        case 1:
+            grey_model_gen = grey_model_generator(
+                my_data, window_size, c=c, c_ratio=c_ratio)
+        case 2:
+            grey_model_gen = grey_model_generator_2(my_data)
+        case _:
+            raise ValueError(f'case {grey_version} is not a valid option.')
+    if with_progress:
+        shocks, non_shocks = detection_to_intervals_for_generator_v1_with_progress(
+            time, begin, grey_model_gen, len(data) - window_size,
+            start_offset=window_size)
+    else:
+        shocks, non_shocks = detection_to_intervals_for_generator_v1(
+            time, begin, grey_model_gen, start_offset=window_size)
+
     # if with_progress:
     #     grey_model_gen = tqdm(
     #         grey_model_generator_2(
@@ -355,16 +373,16 @@ def get_grey_model_from_generator(time, data,  window_size=1, c=3, c_ratio=3, sh
     # else:
     #     grey_model_gen = grey_model_generator_2(
     #         my_data)
-    if with_progress:
-        grey_model_gen = tqdm(
-            grey_model_generator(
-                my_data, window_size, c=c, c_ratio=c_ratio),
-            total=len(data)-window_size)
-    else:
-        grey_model_gen = grey_model_generator(
-            my_data, window_size, c=c, c_ratio=c_ratio)
-    shocks, non_shocks = detection_to_intervals_for_generator_v1(
-        time, begin, grey_model_gen, start_offset=window_size)
+    # if with_progress:
+    #     grey_model_gen = tqdm(
+    #         grey_model_generator(
+    #             my_data, window_size, c=c, c_ratio=c_ratio),
+    #         total=len(data)-window_size)
+    # else:
+    #     grey_model_gen = grey_model_generator(
+    #         my_data, window_size, c=c, c_ratio=c_ratio)
+    # shocks, non_shocks = detection_to_intervals_for_generator_v1(
+    #     time, begin, grey_model_gen, start_offset=window_size)
     return shocks, non_shocks
 
 
