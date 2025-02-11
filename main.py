@@ -613,8 +613,11 @@ def plot_detection_1(time, data, models):
         signal_names.append(signal_idx)
     # Make data frame for results
     df: pd.DataFrame = write_metric_table(time, ground, predictions, algorithm_names, signal_names)
-    # Write data frame for LaTeX
-    save_folder = Path(os.curdir, 'figures', 'tables', '2025-01-06')
+    return df
+
+
+def format_frame_for_latex(df: pd.DataFrame):
+    """ """
     tex_table: pd.DataFrame = df.iloc[:,1:]
     # convert the columns from s to ms
     tex_table.loc[:, 'earliest correct'] *= 1_000
@@ -622,7 +625,8 @@ def plot_detection_1(time, data, models):
     tex_table = tex_table.rename(columns={
         'earliest correct': 'earliest correct (ms)',
         'delay': 'detection delay (ms)'})
-    write_frame_to_latex(tex_table, 'filtered-table-5.tex', save_folder)
+    return tex_table
+
 
 def write_frame_to_latex(frame: pd.DataFrame, filename, folder=None):
     """ Writes reference frame and prediction frame to LaTeX files.
