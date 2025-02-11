@@ -25,7 +25,8 @@ except ModuleNotFoundError:
     warnings.warn('Rust module not included in environment.')
 except ImportError:
     warnings.warn('Expected rust extensions to be available.')
-from online_detection.model_helpers import detection_to_intervals_for_generator_v1
+from online_detection.model_helpers import detection_to_intervals_for_generator_v1, \
+    detection_to_intervals_for_generator_v1_with_progress
 from utils.read_data import get_data
 
 
@@ -310,17 +311,27 @@ def get_bocpd_v5_from_generator(time, data, mu, kappa, alpha, beta, lamb,
         data_list = data.tolist()
         out = run_bocpd(data_list, mu, kappa, alpha, beta, lamb)
         bocpd_model_gen = (prob <= 0.05 for prob in out)
+        shocks, non_shocks = detection_to_intervals_for_generator_v1(
+            time, begin, bocpd_model_gen)
     except NameError:
         print('Exception occurred, reverting to python')
-        if with_progress:
-            bocpd_model_gen = tqdm(
-                bayesian_online_changepoint_detection_v6_generator(
-                    my_data, mu, kappa, alpha, beta, lamb), total=len(data))
-        else:
-            bocpd_model_gen = bayesian_online_changepoint_detection_v6_generator(
+        bocpd_model_gen = bayesian_online_changepoint_detection_v6_generator(
                 my_data, mu, kappa, alpha, beta, lamb)
-    shocks, non_shocks = detection_to_intervals_for_generator_v1(
-        time, begin, bocpd_model_gen)
+        if with_progress:
+            shocks, non_shocks = detection_to_intervals_for_generator_v1_with_progress(
+                time, begin, bocpd_model_gen, len(data))
+        else:
+            shocks, non_shocks = detection_to_intervals_for_generator_v1(
+                time, begin, bocpd_model_gen)
+    #     if with_progress:
+    #         bocpd_model_gen = tqdm(
+    #             bayesian_online_changepoint_detection_v6_generator(
+    #                 my_data, mu, kappa, alpha, beta, lamb), total=len(data))
+    #     else:
+    #         bocpd_model_gen = bayesian_online_changepoint_detection_v6_generator(
+    #             my_data, mu, kappa, alpha, beta, lamb)
+    # shocks, non_shocks = detection_to_intervals_for_generator_v1(
+    #     time, begin, bocpd_model_gen)
     return shocks, non_shocks
 
 
@@ -467,7 +478,8 @@ def get_plot_bocpd(file_path, with_progress=False):
     # alpha, beta = 0.1, 0.01
     lamb = 100
     shock_intervals_w, non_shock_intervals_w = get_bocpd_windowed(
-        time, data, mu, kappa, alpha, beta, lamb, window_size=100, with_progress=with_progress)
+        time, data, mu, kappa, alpha, beta, lamb, window_size=100,
+        with_progress=with_progress)
     fig_w = plot_shock(time, data, shock_intervals_w, non_shock_intervals_w)
     # return shock_intervals, non_shock_intervals, fig
     # return shock_intervals_2, non_shock_intervals_2, fig_2
