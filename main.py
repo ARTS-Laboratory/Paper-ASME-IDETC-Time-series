@@ -18,6 +18,7 @@ import Hyperparameters
 import utils
 
 from DetectionAlgorithm import DetectionAlgorithm
+from config_parse import read_model_config
 from fig_funcs import rupture_changepoint_plots
 from fig_funcs.detection_plots import plot_shock, interval_histogram, raw_histogram  # , convert_intervals_to_time_memoized
 from fig_funcs.histograms import plot_metric_histogram
@@ -644,72 +645,6 @@ def write_frame_to_latex(frame: pd.DataFrame, filename, folder=None):
     tmp_folder = folder if folder else ''
     frame.style.format(precision=3).hide(axis='index').to_latex(
         buf=Path(tmp_folder, filename), hrules=True)
-
-def read_model_config(config_file):
-    """ Parse config file for models."""
-    config_table = load_toml(config_file)
-    default_save_path = save_path(config_table['save-root'])
-    models = config_table['models']
-    algs = list()
-    for model in models:
-        hp = model['hyperparameters']
-        if 'save-path' in model:
-            save_name = save_path(model['save-path'])
-        else:
-            save_name = default_save_path
-        if 'show-progress' in model:
-            with_progress = model['show-progress']
-        else:
-            with_progress = False
-        match model['name']:
-            case 'bocpd':
-                alg = DetectionAlgorithm(
-                    name=model['name'], with_progress=with_progress,
-                    save_path=save_name,
-                    hyperparameters=Hyperparameters.BOCPDHyperparams(
-                        alpha=hp['alpha'], beta=hp['beta'], mu=hp['mu'],
-                        kappa=hp['kappa'], lamb=hp['lambda']))
-            case 'expectation maximization':
-                alg = DetectionAlgorithm(
-                    name=model['name'], with_progress=with_progress,
-                    save_path=save_name,
-                    hyperparameters=Hyperparameters.EMHyperparams(
-                        normal_data_size=hp['normal-data-size'],
-                        abnormal_data_size=hp['abnormal-data-size'],
-                        normal_mean=hp['normal-mean'],
-                        abnormal_mean=hp['abnormal-mean'],
-                        normal_var=hp['normal-variance'],
-                        abnormal_var=hp['abnormal-variance'],
-                        pi=hp['pi'], epochs=hp['epochs']))
-            case 'cusum':
-                alg = DetectionAlgorithm(
-                    name=model['name'], with_progress=with_progress,
-                    save_path=save_name,
-                    hyperparameters=Hyperparameters.CUSUMHyperparams(
-                        mean=hp['mean'], std_dev=hp['standard-deviation'], h=hp['h'],
-                        alpha=hp['alpha']))
-            case 'grey':
-                alg = DetectionAlgorithm(
-                    name=model['name'], with_progress=with_progress,
-                    save_path=save_name,
-                    hyperparameters=Hyperparameters.GreyHyperparams(
-                        window_size=hp['window-size'],
-                        critical_value=hp['critical-value'],
-                        critical_ratio_value=hp['critical-ratio-value'],
-                        alpha=hp['alpha']))
-            case 'nonparametric':
-                alg = DetectionAlgorithm(
-                    name=model['name'], with_progress=with_progress,
-                    save_path=save_name,
-                    hyperparameters=Hyperparameters.NonparametricHyperparams(
-                        window_size=hp['window-size'],
-                        critical_value=hp['critical-value'], alpha=hp['alpha']
-                    ))
-            case _:
-                raise NotImplementedError
-        algs.append(alg)
-    return algs
-
 
 
 def plot_metric_boxplot(left_data, right_data):
