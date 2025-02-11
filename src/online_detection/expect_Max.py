@@ -7,7 +7,8 @@ from numba import njit
 from typing import List, Optional, Iterable
 from tqdm import tqdm
 
-from online_detection.model_helpers import detection_to_intervals_for_generator_v1
+from online_detection.model_helpers import detection_to_intervals_for_generator_v1, \
+    detection_to_intervals_for_generator_v1_with_progress
 from src.fig_funcs.detection_plots import plot_shock
 from src.utils.read_data import get_data
 
@@ -403,16 +404,25 @@ def get_expectation_maximization_model_from_generator(
         pi_p = ab_size / (normal_size + ab_size)
     # Begin algorithm loop
     my_normal_obs, my_abnormal_obs, my_unknowns = np.asarray(normal_obs), np.asarray(abnormal_obs), np.asarray(unknowns)
-    if with_progress:
-        em_model_gen = tqdm(expectation_maximization_generator(
-        my_normal_obs, my_abnormal_obs, my_unknowns, mean_1_p, mean_2_p,
-        var_1_p, var_2_p, pi_p, epochs), total=len(unknowns))
-    else:
-        em_model_gen = expectation_maximization_generator(
+    em_model_gen = expectation_maximization_generator(
         my_normal_obs, my_abnormal_obs, my_unknowns, mean_1_p, mean_2_p,
         var_1_p, var_2_p, pi_p, epochs)
-    shocks, non_shocks = detection_to_intervals_for_generator_v1(
+    if with_progress:
+        shocks, non_shocks = detection_to_intervals_for_generator_v1_with_progress(
+            time, begin, em_model_gen, len(unknowns))
+    else:
+        shocks, non_shocks = detection_to_intervals_for_generator_v1(
         time, begin, em_model_gen)
+    # if with_progress:
+    #     em_model_gen = tqdm(expectation_maximization_generator(
+    #     my_normal_obs, my_abnormal_obs, my_unknowns, mean_1_p, mean_2_p,
+    #     var_1_p, var_2_p, pi_p, epochs), total=len(unknowns))
+    # else:
+    #     em_model_gen = expectation_maximization_generator(
+    #     my_normal_obs, my_abnormal_obs, my_unknowns, mean_1_p, mean_2_p,
+    #     var_1_p, var_2_p, pi_p, epochs)
+    # shocks, non_shocks = detection_to_intervals_for_generator_v1(
+    #     time, begin, em_model_gen)
     return shocks, non_shocks
 
 
