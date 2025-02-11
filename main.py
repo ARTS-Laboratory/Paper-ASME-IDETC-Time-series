@@ -572,7 +572,7 @@ def plot_detection_1(time, data, models):
                     time, safe, unsafe, data, hp.normal_mean,
                     hp.abnormal_mean, hp.normal_var, hp.abnormal_var, hp.pi,
                     hp.epochs, with_progress=model.with_progress)
-                detection_fig = plot_shock(time, data, shocks, non_shocks)
+                detection_fig = plot_shock(time, data, shocks, non_shocks, to_ms=True)
                 plt.savefig(Path(model.save_path, 'expectation_maximization_fig.png'), dpi=350)
                 plt.close(detection_fig)
                 pred = intervals_to_dense_arr(time, shocks, non_shocks)
@@ -580,7 +580,7 @@ def plot_detection_1(time, data, models):
             case 'cusum':
                 shocks, non_shocks = cusum_alg(
                     time, data, **asdict(model.hyperparameters))
-                detection_fig = plot_shock(time, data, shocks, non_shocks)
+                detection_fig = plot_shock(time, data, shocks, non_shocks, to_ms=True)
                 plt.savefig(Path(model.save_path, 'cusum_fig.png'), dpi=350)
                 plt.close(detection_fig)
                 pred = intervals_to_dense_arr(time, shocks, non_shocks)
@@ -591,7 +591,7 @@ def plot_detection_1(time, data, models):
                     time, data, hp.window_size, hp.critical_value,
                     hp.critical_ratio_value,
                     with_progress=model.with_progress)
-                detection_fig = plot_shock(time, data, shocks, non_shocks)
+                detection_fig = plot_shock(time, data, shocks, non_shocks, to_ms=True)
                 plt.savefig(Path(model.save_path, 'grey_fig.png'), dpi=350)
                 plt.close(detection_fig)
                 pred = intervals_to_dense_arr(time, shocks, non_shocks)
@@ -601,7 +601,7 @@ def plot_detection_1(time, data, models):
                 shocks, non_shocks = get_nonparametric_model_from_generator(
                     time, data, hp.window_size, hp.alpha, hp.critical_value,
                     with_progress=model.with_progress)
-                detection_fig = plot_shock(time, data, shocks, non_shocks)
+                detection_fig = plot_shock(time, data, shocks, non_shocks, to_ms=True)
                 plt.savefig(Path(model.save_path, 'nonparametric_fig.png'), dpi=350)
                 plt.close(detection_fig)
                 pred = intervals_to_dense_arr(time, shocks, non_shocks)
