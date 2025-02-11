@@ -5,6 +5,11 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "change-point-detection"
 version = "2025.0.0"
+authors = [
+    {name = "Zhymir Thompson"}
+]
+readme = "README.md"
+
 dependencies = [
     "matplotlib",
     "more_itertools",
