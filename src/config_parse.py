@@ -15,10 +15,13 @@ def read_model_config(config_file):
     algs = list()
     for model in models:
         hp = model['hyperparameters']
+        model_type: str = model['type']
+        model_name: str = model['name']
         if 'save-path' in model:
-            save_name = save_path(model['save-path'])
+            save_dir = save_path(model['save-path'])
         else:
-            save_name = default_save_path
+            save_dir = default_save_path
+        m_save_path = Path(save_dir, model['save-name'])
         if 'show-progress' in model:
             with_progress = model['show-progress']
         else:
