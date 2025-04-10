@@ -4,4 +4,5 @@
 # Allow default config
 !./configs/example-config.toml
 !./configs/main-config.toml
+!./configs/template_config.toml
 */output.pstats
