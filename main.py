@@ -28,6 +28,7 @@ from offline_detection import binary_segmentation
 
 from plot_makers.signal_plot_makers import make_signal_plots, make_spectrogram_plots
 from utils.matplotlib_formatting import set_rc_params
+from utils.path_validation import confirm_dir_or_consult
 from utils.read_data import load_signals
 from utils.toml_utils import load_toml
 from utils.write_data import save_path
@@ -437,7 +438,8 @@ def run_from_config():
     set_rc_params()
     config_file = './src/configs/first_impact_config.toml'
     config_table = load_toml(config_file)
-    time, data = load_signals(Path(config_table['file-path']))
+    file_path = Path(config_table['file-path'])
+    time, data = load_signals(file_path)
     algs = read_model_config(config_file)
     df = plot_detection_1(time, data, algs)
     # Write data frame for LaTeX
