@@ -427,7 +427,7 @@ def profile():
 def run_from_config():
     """ """
     set_rc_params()
-    config_file = './src/configs/first_impact_config.toml'
+    config_file = './configs/first_impact_config.toml'
     config_table = load_toml(config_file)
     file_path = Path(config_table['file-path'])
     time, data = load_signals(file_path)
