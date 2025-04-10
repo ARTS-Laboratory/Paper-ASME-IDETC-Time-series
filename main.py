@@ -14,10 +14,8 @@ from pathlib import Path
 from matplotlib import pyplot as plt
 from more_itertools import sliding_window
 
-import Hyperparameters
 import utils
 
-from DetectionAlgorithm import DetectionAlgorithm
 from config_parse import read_model_config
 from fig_funcs.detection_plots import plot_shock, interval_histogram, raw_histogram  # , convert_intervals_to_time_memoized
 from fig_funcs.histograms import plot_metric_histogram
@@ -27,6 +25,7 @@ from model_runners.online_models import run_online_models, plot_detection_online
 from offline_detection import binary_segmentation
 
 from plot_makers.signal_plot_makers import make_signal_plots, make_spectrogram_plots
+from utils.detection_arr_helpers import intervals_to_dense_arr, convert_interval_indices_to_full_arr
 from utils.matplotlib_formatting import set_rc_params
 from utils.path_validation import confirm_dir_or_consult
 from utils.read_data import load_signals
@@ -451,8 +450,6 @@ def run_from_config():
     file_path = Path(config_table['file-path'])
     time, data = load_signals(file_path)
     algs = read_model_config(config_file)
-    df = plot_detection_1(time, data, algs)
-    # Write data frame for LaTeX
     ## get ground truth
     (true_shocks, true_nonshocks) = make_ground_truth(time, data)
     ground = convert_interval_indices_to_full_arr(true_shocks, true_nonshocks, len(time))
