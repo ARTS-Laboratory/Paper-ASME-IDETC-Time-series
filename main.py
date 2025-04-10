@@ -24,10 +24,11 @@ from fig_funcs.histograms import plot_metric_histogram
 from fig_funcs.radar_plots import plot_metric_scores_for_paper
 from model_runners.offline_anomaly_models import run_offline_anomaly_models, AnomalyType, plot_detection_anomaly_models
 from model_runners.online_models import run_online_models, plot_detection_online_models
+from offline_detection import binary_segmentation
 
 from plot_makers.signal_plot_makers import make_signal_plots, make_spectrogram_plots
 from utils.matplotlib_formatting import set_rc_params
-from utils.read_data import get_data
+from utils.read_data import load_signals
 from utils.toml_utils import load_toml
 from utils.write_data import save_path
 
@@ -485,25 +486,6 @@ def get_args():
     parser_online = subparsers.add_parser('online')
     parser_offline = subparsers.add_parser('offline')
     args = parse.parse_args()
-
-
-def load_signals(file_path: (Path | str)) -> tuple[np.ndarray, np.ndarray]:
-    """ Load signals in from file."""
-    if isinstance(file_path, Path):
-        my_path = file_path
-    elif isinstance(file_path, str):
-        my_path = Path(file_path)
-    else:
-        raise TypeError('file_path must be a string or Path')
-    match my_path.suffix:
-        case '.txt':
-            my_data = get_data(file_path)
-        case '.npy':
-            my_data = np.load(file_path)
-        case _:
-            raise NotImplementedError
-    time, data = my_data[:, 0], my_data[:, 1]
-    return time, data
 
 
 def shorten_signals(time_vec, data_vec):
