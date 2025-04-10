@@ -1,5 +1,8 @@
+
+from pathlib import Path
+
 import Hyperparameters
-from DetectionAlgorithm import DetectionAlgorithm
+from DetectionAlgorithm import DetectionAlgorithm, ModelType
 from utils.toml_utils import load_toml
 from utils.write_data import save_path
 
@@ -20,7 +23,7 @@ def read_model_config(config_file):
             with_progress = model['show-progress']
         else:
             with_progress = False
-        match model['name']:
+        match model_type:
             case 'bocpd':
                 alg = DetectionAlgorithm(
                     name=model['name'], with_progress=with_progress,
