@@ -15,6 +15,7 @@ from more_itertools import sliding_window
 import utils
 
 from config_parse import read_model_config
+from evals.metrics import get_earliest_correct, get_detect_delay
 from fig_funcs.detection_plots import plot_shock  # , convert_intervals_to_time_memoized
 from fig_funcs.histograms import plot_metric_histogram
 from fig_funcs.radar_plots import plot_metric_scores_for_paper
@@ -94,26 +95,7 @@ def write_metric_table(
     return df
 
 
-def get_earliest_correct(time, ground, predictions):
-    """ """
-    true_positive_indices = np.logical_and(
-        ground.astype(bool), predictions.astype(bool))
-    if true_positive_indices.any():
-        earliest_correct = time[true_positive_indices][0]
-    else:
-        earliest_correct = np.inf
-    return earliest_correct
-
-
-def get_detect_delay(time, ground: np.ndarray, earliest_correct):
-    """ """
-    if ground.astype(bool).any():
-        first = time[np.nonzero(ground.astype(bool))][0]
-        return earliest_correct - first
-    return np.inf
-
-
-def get_scores(time, ground, predictions):
+def get_default_scores(time, ground, predictions):
     """ Return metric score for predicted shock prediction given comparison."""
     # Calculate scores
     f1_score = sklearn.metrics.f1_score(ground, predictions)
