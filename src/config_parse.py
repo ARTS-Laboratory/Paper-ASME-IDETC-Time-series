@@ -25,49 +25,38 @@ def read_model_config(config_file):
             with_progress = False
         match model_type:
             case 'bocpd':
-                alg = DetectionAlgorithm(
-                    name=model['name'], with_progress=with_progress,
-                    save_path=save_name,
-                    hyperparameters=Hyperparameters.BOCPDHyperparams(
+                hyperparams = Hyperparameters.BOCPDHyperparams(
                         alpha=hp['alpha'], beta=hp['beta'], mu=hp['mu'],
-                        kappa=hp['kappa'], lamb=hp['lambda']))
+                        kappa=hp['kappa'], lamb=hp['lambda'])
             case 'expectation maximization':
-                alg = DetectionAlgorithm(
-                    name=model['name'], with_progress=with_progress,
-                    save_path=save_name,
-                    hyperparameters=Hyperparameters.EMHyperparams(
+                hyperparams = Hyperparameters.EMHyperparams(
                         normal_data_size=hp['normal-data-size'],
                         abnormal_data_size=hp['abnormal-data-size'],
                         normal_mean=hp['normal-mean'],
                         abnormal_mean=hp['abnormal-mean'],
                         normal_var=hp['normal-variance'],
                         abnormal_var=hp['abnormal-variance'],
-                        pi=hp['pi'], epochs=hp['epochs']))
+                        pi=hp['pi'], epochs=hp['epochs'])
             case 'cusum':
-                alg = DetectionAlgorithm(
-                    name=model['name'], with_progress=with_progress,
-                    save_path=save_name,
-                    hyperparameters=Hyperparameters.CUSUMHyperparams(
+                hyperparams = Hyperparameters.CUSUMHyperparams(
                         mean=hp['mean'], std_dev=hp['standard-deviation'], h=hp['h'],
-                        alpha=hp['alpha']))
+                        alpha=hp['alpha'])
             case 'grey':
-                alg = DetectionAlgorithm(
-                    name=model['name'], with_progress=with_progress,
-                    save_path=save_name,
-                    hyperparameters=Hyperparameters.GreyHyperparams(
+                hyperparams = Hyperparameters.GreyHyperparams(
                         window_size=hp['window-size'],
                         critical_value=hp['critical-value'],
                         critical_ratio_value=hp['critical-ratio-value'],
-                        alpha=hp['alpha']))
+                        alpha=hp['alpha'])
             case 'nonparametric':
-                alg = DetectionAlgorithm(
-                    name=model['name'], with_progress=with_progress,
-                    save_path=save_name,
-                    hyperparameters=Hyperparameters.NonparametricHyperparams(
+                hyperparams = Hyperparameters.NonparametricHyperparams(
                         window_size=hp['window-size'],
                         critical_value=hp['critical-value'], alpha=hp['alpha']
-                    ))
+                    )
             case _:
                 raise NotImplementedError
+        alg = DetectionAlgorithm(
+            type=ModelType(model_type),
+            name=model_name, with_progress=with_progress,
+            save_path=m_save_path, hyperparameters=hyperparams)
         algs.append(alg)
     return algs
