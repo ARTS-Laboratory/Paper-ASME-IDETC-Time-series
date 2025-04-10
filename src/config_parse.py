@@ -63,3 +63,53 @@ def read_model_config(config_file):
             save_path=m_save_path, hyperparameters=hyperparams)
         algs.append(alg)
     return algs
+
+
+# def parse_models_config(models_config: dict):
+#     """ Parse models config and return model config object."""
+#     algs = list()
+#     for model in models:
+#         hp = model['hyperparameters']
+#         model_type: str = model['type']
+#         model_name: str = model['name']
+#         save_name: str = model['save-name']
+#         match model_type:
+#             case 'bocpd':
+#                 hyperparams = Hyperparameters.BOCPDHyperparams(
+#                         alpha=hp['alpha'], beta=hp['beta'], mu=hp['mu'],
+#                         kappa=hp['kappa'], lamb=hp['lambda'])
+#             case 'expectation maximization':
+#                 hyperparams = Hyperparameters.EMHyperparams(
+#                         normal_data_size=hp['normal-data-size'],
+#                         abnormal_data_size=hp['abnormal-data-size'],
+#                         normal_mean=hp['normal-mean'],
+#                         abnormal_mean=hp['abnormal-mean'],
+#                         normal_var=hp['normal-variance'],
+#                         abnormal_var=hp['abnormal-variance'],
+#                         pi=hp['pi'], epochs=hp['epochs'])
+#             case 'cusum':
+#                 hyperparams = Hyperparameters.CUSUMHyperparams(
+#                         mean=hp['mean'], std_dev=hp['standard-deviation'], h=hp['h'],
+#                         alpha=hp['alpha'])
+#             case 'grey':
+#                 hyperparams = Hyperparameters.GreyHyperparams(
+#                         window_size=hp['window-size'],
+#                         critical_value=hp['critical-value'],
+#                         critical_ratio_value=hp['critical-ratio-value'],
+#                         alpha=hp['alpha'])
+#             case 'nonparametric':
+#                 hyperparams = Hyperparameters.NonparametricHyperparams(
+#                         window_size=hp['window-size'],
+#                         critical_value=hp['critical-value'], alpha=hp['alpha']
+#                     )
+#             case _:
+#                 # should i crash the whole app here or skip the model?
+#                 raise NotImplementedError
+#         alg = DetectionAlgorithm(
+#             type=ModelType(model_type),
+#             name=model_name, with_progress=with_progress,
+#             save_path=m_save_path, hyperparameters=hyperparams)
+#         algs.append(alg)
+#     return algs
+
+
