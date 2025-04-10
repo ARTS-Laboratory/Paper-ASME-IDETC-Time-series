@@ -385,8 +385,9 @@ def format_frame_for_latex(df: pd.DataFrame):
     """ """
     tex_table: pd.DataFrame = df.iloc[:,1:]
     # convert the columns from s to ms
-    tex_table.loc[:, 'earliest correct'] *= 1_000
-    tex_table.loc[:, 'delay'] *= 1_000
+    scalar = 1_000
+    tex_table.loc[:, 'earliest correct'] *= scalar
+    tex_table.loc[:, 'delay'] *= scalar
     tex_table = tex_table.rename(columns={
         'earliest correct': 'earliest correct (ms)',
         'delay': 'detection delay (ms)'})
