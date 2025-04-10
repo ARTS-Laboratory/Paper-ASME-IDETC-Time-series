@@ -13,7 +13,7 @@ def parse_data_config(config: dict):
     what = config['what']  # what type of data to expect
     where = config['where']  # the table of information we need to retrieve the data
     data_source = DataSource(what)
-    match what:
+    match data_source:
         case DataSource.ARRAY:
             data_dir = where['dir']
             data_name = where['filename']
