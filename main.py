@@ -31,6 +31,7 @@ from online_detection.bocpd import get_bocpd_v5_from_generator
 from online_detection.cusum import get_plot_cusum, get_cusum_revised, cusum, cusum_alg, cusum_alg_v1
 from online_detection.dni import get_plot_dni
 from online_detection.expect_Max import get_expectation_maximization_model_from_generator
+from fig_funcs.radar_plots import plot_metric_scores_for_paper
 
 from online_detection.grey_systems_model import get_grey_model_from_generator, get_grey_model
 from online_detection.nonparametric_model import get_nonparametric_model_from_generator
@@ -684,7 +685,10 @@ def run_from_config():
     save_folder = Path(os.curdir, 'figures', '2025-02-11', 'tables')
     save_name = config_table['metric-table']['save-name']
     write_frame_to_latex(tex_table, save_name, save_folder)
-
+    # Make radar chart
+    metric_radar_fig = plot_metric_scores_for_paper(df)
+    metric_radar_fig.write_image(Path(save_root, 'metric_radar_chart.png'))
+    metric_radar_fig.write_image(Path(save_root, 'metric_radar_chart.pdf'))
 
 
 def get_args():
