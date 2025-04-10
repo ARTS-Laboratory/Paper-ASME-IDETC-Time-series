@@ -22,6 +22,8 @@ from config_parse import read_model_config
 from fig_funcs.detection_plots import plot_shock, interval_histogram, raw_histogram  # , convert_intervals_to_time_memoized
 from fig_funcs.histograms import plot_metric_histogram
 from fig_funcs.radar_plots import plot_metric_scores_for_paper
+from model_runners.offline_anomaly_models import run_offline_anomaly_models, AnomalyType, plot_detection_anomaly_models
+from model_runners.online_models import run_online_models, plot_detection_online_models
 
 from plot_makers.signal_plot_makers import make_signal_plots, make_spectrogram_plots
 from utils.matplotlib_formatting import set_rc_params
@@ -267,83 +269,105 @@ def data_transformations(data):
 #             get_nonparametric_model_from_generator(time, data, with_progress=model.show_progress)
 
 
-def plot_detection_1(time, data, models):
+
+# def plot_detection_1(time, data, models):
+#     """ """
+#     #todo save names should be part of config
+#     # Get ground truth here
+#     # Evaluation stuff
+#     (true_shocks, true_nonshocks) = make_ground_truth(time, data)
+#     ground = convert_interval_indices_to_full_arr(true_shocks, true_nonshocks, len(time))
+#     results = list()
+#     algorithm_names = list()
+#     signal_names = list()
+#     signal_idx = 0
+#     # set some defaults here
+#     dpi = 350
+#     to_ms = True
+#     # Start iteration
+#     for model in models:
+#         signal_idx += 1
+#         match model.name:
+#             case 'bocpd':
+#                 shocks, non_shocks = get_bocpd_v5_from_generator(
+#                     time, data, **asdict(model.hyperparameters),
+#                     with_progress=model.with_progress)
+#                 detection_fig = plot_shock(time, data, shocks, non_shocks, to_ms=to_ms)
+#                 plt.savefig(Path(model.save_path, 'bocpd_fig.png'), dpi=dpi)
+#                 plt.close(detection_fig)
+#                 # pred = intervals_to_dense_arr(time, shocks, non_shocks)
+#                 # print_scores(time, ground, pred)
+#             case 'expectation maximization':
+#                 hp: Hyperparameters.EMHyperparams = model.hyperparameters
+#                 rng = np.random.default_rng()
+#                 safe = rng.normal(
+#                     hp.normal_mean, math.sqrt(hp.normal_var),
+#                     hp.normal_data_size)
+#                 unsafe = rng.normal(
+#                     hp.abnormal_mean, math.sqrt(hp.abnormal_var),
+#                     hp.abnormal_data_size)
+#                 shocks, non_shocks = get_expectation_maximization_model_from_generator(
+#                     time, safe, unsafe, data, hp.normal_mean,
+#                     hp.abnormal_mean, hp.normal_var, hp.abnormal_var, hp.pi,
+#                     hp.epochs, with_progress=model.with_progress)
+#                 detection_fig = plot_shock(time, data, shocks, non_shocks, to_ms=to_ms)
+#                 plt.savefig(Path(model.save_path, 'expectation_maximization_fig.png'), dpi=dpi)
+#                 plt.close(detection_fig)
+#                 # pred = intervals_to_dense_arr(time, shocks, non_shocks)
+#                 # print_scores(time, ground, pred)
+#             case 'cusum':
+#                 shocks, non_shocks = cusum_alg(
+#                     time, data, **asdict(model.hyperparameters))
+#                 detection_fig = plot_shock(time, data, shocks, non_shocks, to_ms=to_ms)
+#                 plt.savefig(Path(model.save_path, 'cusum_fig.png'), dpi=dpi)
+#                 plt.close(detection_fig)
+#                 # pred = intervals_to_dense_arr(time, shocks, non_shocks)
+#                 # print_scores(time, ground, pred)
+#             case 'grey':
+#                 hp: Hyperparameters.GreyHyperparams = model.hyperparameters
+#                 shocks, non_shocks = get_grey_model_from_generator(
+#                     time, data, hp.window_size, hp.critical_value,
+#                     hp.critical_ratio_value,
+#                     with_progress=model.with_progress)
+#                 detection_fig = plot_shock(time, data, shocks, non_shocks, to_ms=to_ms)
+#                 plt.savefig(Path(model.save_path, 'grey_fig.png'), dpi=dpi)
+#                 plt.close(detection_fig)
+#                 # pred = intervals_to_dense_arr(time, shocks, non_shocks)
+#                 # print_scores(time, ground, pred)
+#             case 'nonparametric':
+#                 hp: Hyperparameters.NonparametricHyperparams = model.hyperparameters
+#                 shocks, non_shocks = get_nonparametric_model_from_generator(
+#                     time, data, hp.window_size, hp.alpha, hp.critical_value,
+#                     with_progress=model.with_progress)
+#                 detection_fig = plot_shock(time, data, shocks, non_shocks, to_ms=to_ms)
+#                 plt.savefig(Path(model.save_path, 'nonparametric_fig.png'), dpi=dpi)
+#                 plt.close(detection_fig)
+#             case _:
+#                 raise NotImplementedError
+#         pred = intervals_to_dense_arr(time, shocks, non_shocks)
+#         print_scores(time, ground, pred)
+#         results.append(pred)
+#         algorithm_names.append(model.name)
+#         signal_names.append(signal_idx)
+#     # Make data frame for results
+#     df: pd.DataFrame = write_metric_table(time, ground, results, algorithm_names, signal_names)
+#
+#     return df
+
+def evaluate_online_models(time, model_results, ground):
     """ """
-    #todo save names should be part of config
-    # Get ground truth here
-    # Evaluation stuff
-    (true_shocks, true_nonshocks) = make_ground_truth(time, data)
-    ground = convert_interval_indices_to_full_arr(true_shocks, true_nonshocks, len(time))
     predictions = list()
     algorithm_names = list()
     signal_names = list()
-    signal_idx = 0
-    for model in models:
-        signal_idx += 1
-        match model.name:
-            case 'bocpd':
-                shocks, non_shocks = get_bocpd_v5_from_generator(
-                    time, data, **asdict(model.hyperparameters),
-                    with_progress=model.with_progress)
-                detection_fig = plot_shock(time, data, shocks, non_shocks, to_ms=True)
-                plt.savefig(Path(model.save_path, 'bocpd_fig.png'), dpi=350)
-                plt.close(detection_fig)
-                pred = intervals_to_dense_arr(time, shocks, non_shocks)
-                print_scores(time, ground, pred)
-            case 'expectation maximization':
-                hp: Hyperparameters.EMHyperparams = model.hyperparameters
-                rng = np.random.default_rng()
-                safe = rng.normal(
-                    hp.normal_mean, math.sqrt(hp.normal_var),
-                    hp.normal_data_size)
-                unsafe = rng.normal(
-                    hp.abnormal_mean, math.sqrt(hp.abnormal_var),
-                    hp.abnormal_data_size)
-                shocks, non_shocks = get_expectation_maximization_model_from_generator(
-                    time, safe, unsafe, data, hp.normal_mean,
-                    hp.abnormal_mean, hp.normal_var, hp.abnormal_var, hp.pi,
-                    hp.epochs, with_progress=model.with_progress)
-                detection_fig = plot_shock(time, data, shocks, non_shocks, to_ms=True)
-                plt.savefig(Path(model.save_path, 'expectation_maximization_fig.png'), dpi=350)
-                plt.close(detection_fig)
-                pred = intervals_to_dense_arr(time, shocks, non_shocks)
-                print_scores(time, ground, pred)
-            case 'cusum':
-                shocks, non_shocks = cusum_alg(
-                    time, data, **asdict(model.hyperparameters))
-                detection_fig = plot_shock(time, data, shocks, non_shocks, to_ms=True)
-                plt.savefig(Path(model.save_path, 'cusum_fig.png'), dpi=350)
-                plt.close(detection_fig)
-                pred = intervals_to_dense_arr(time, shocks, non_shocks)
-                print_scores(time, ground, pred)
-            case 'grey':
-                hp: Hyperparameters.GreyHyperparams = model.hyperparameters
-                shocks, non_shocks = get_grey_model_from_generator(
-                    time, data, hp.window_size, hp.critical_value,
-                    hp.critical_ratio_value,
-                    with_progress=model.with_progress)
-                detection_fig = plot_shock(time, data, shocks, non_shocks, to_ms=True)
-                plt.savefig(Path(model.save_path, 'grey_fig.png'), dpi=350)
-                plt.close(detection_fig)
-                pred = intervals_to_dense_arr(time, shocks, non_shocks)
-                print_scores(time, ground, pred)
-            case 'nonparametric':
-                hp: Hyperparameters.NonparametricHyperparams = model.hyperparameters
-                shocks, non_shocks = get_nonparametric_model_from_generator(
-                    time, data, hp.window_size, hp.alpha, hp.critical_value,
-                    with_progress=model.with_progress)
-                detection_fig = plot_shock(time, data, shocks, non_shocks, to_ms=True)
-                plt.savefig(Path(model.save_path, 'nonparametric_fig.png'), dpi=350)
-                plt.close(detection_fig)
-                pred = intervals_to_dense_arr(time, shocks, non_shocks)
-                print_scores(time, ground, pred)
-            case _:
-                raise NotImplementedError
+    for idx, (model, shocks, non_shocks) in enumerate(model_results, start=1):
+        pred = intervals_to_dense_arr(time, shocks, non_shocks)
+        print_scores(time, ground, pred)
         predictions.append(pred)
         algorithm_names.append(model.name)
-        signal_names.append(signal_idx)
+        signal_names.append(idx)
     # Make data frame for results
-    df: pd.DataFrame = write_metric_table(time, ground, predictions, algorithm_names, signal_names)
+    df: pd.DataFrame = write_metric_table(
+        time, ground, predictions, algorithm_names, signal_names)
     return df
 
 
@@ -396,6 +420,12 @@ def plot_metric_boxplot(left_data, right_data):
 #                 ax = axes[idx, jdx]
 #                 ax.scatter()
 
+def process_online_models(time, data, algs, ground):
+    """ """
+    results = run_online_models(time, data, algs)
+    plot_detection_online_models(time, data, results)
+    df = evaluate_online_models(time, results, ground)
+    return df
 
 def profile():
     cProfile.run('main()', sort='ncalls')
@@ -410,9 +440,35 @@ def run_from_config():
     algs = read_model_config(config_file)
     df = plot_detection_1(time, data, algs)
     # Write data frame for LaTeX
+    ## get ground truth
+    (true_shocks, true_nonshocks) = make_ground_truth(time, data)
+    ground = convert_interval_indices_to_full_arr(true_shocks, true_nonshocks, len(time))
+    ## Process online models
+    df = process_online_models(time, data, algs, ground)
+    # results = run_online_models(time, data, algs)
+    # plot_detection_online_models(time, data, results)
+    # df = evaluate_online_models(time, results, ground)
+    ## Process offline anomaly models
+    anom_save_dir = config_table['save-root']
+    confirm_dir_or_consult(anom_save_dir)
+    # anom_save_dir = Path(os.curdir, 'figures', '2025-04-07', 'signal-1-filtered')
+    anom_save_name = Path('isolation_forest_fig')
+    data_size = len(data)
+    half_point = data_size//2
+    safe = data[:half_point]
+    unsafe = data[half_point:]
+    anom_results = run_offline_anomaly_models(time, safe, unsafe, data, (AnomalyType.ISO_FOREST,))
+    plot_detection_anomaly_models(time, data, anom_results, anom_save_dir, anom_save_name)
+    # todo if save path does not exist, should have option to (create path, don't save, abort)
+    ## Write data frame for LaTeX
+    save_root = config_table['save-root']
+    metric_table_config = config_table['metric-table']
+    metric_root = metric_table_config['save-root']
+    save_name = metric_table_config['save-name']
+    save_folder = Path(save_root, metric_root)
     tex_table = format_frame_for_latex(df)
-    save_folder = Path(os.curdir, 'figures', '2025-02-11', 'tables')
-    save_name = config_table['metric-table']['save-name']
+    # save_folder = Path(os.curdir, 'figures', '2025-02-11', 'tables')
+    # save_name = config_table['metric-table']['save-name']
     write_frame_to_latex(tex_table, save_name, save_folder)
     # Make radar chart
     metric_radar_fig = plot_metric_scores_for_paper(df)
