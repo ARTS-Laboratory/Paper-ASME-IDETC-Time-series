@@ -4,8 +4,6 @@ try:
     from tqdm import tqdm
 except ModuleNotFoundError:
     warnings.warn('tqdm module not included in environment.')
-except ImportError:
-    warnings.warn('Expected Cython imports to be available.')
 
 
 def detection_to_intervals_for_generator_v1(
