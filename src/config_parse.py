@@ -3,6 +3,7 @@ from pathlib import Path
 
 import Hyperparameters
 from DetectionAlgorithm import DetectionAlgorithm, ModelType
+from utils.path_validation import confirm_dir_or_consult
 from utils.toml_utils import load_toml
 from utils.write_data import save_path
 
@@ -10,7 +11,8 @@ from utils.write_data import save_path
 def read_model_config(config_file):
     """ Parse config file for models."""
     config_table = load_toml(config_file)
-    default_save_path = save_path(config_table['save-root'])
+    default_save_path = Path(config_table['save-root'])
+    confirm_dir_or_consult(default_save_path)
     models = config_table['models']
     algs = list()
     for model in models:
@@ -18,7 +20,8 @@ def read_model_config(config_file):
         model_type: str = model['type']
         model_name: str = model['name']
         if 'save-path' in model:
-            save_dir = save_path(model['save-path'])
+            save_dir = Path(model['save-path'])
+            confirm_dir_or_consult(save_dir)
         else:
             save_dir = default_save_path
         m_save_path = Path(save_dir, model['save-name'])

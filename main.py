@@ -460,7 +460,7 @@ def run_from_config():
     # df = evaluate_online_models(time, results, ground)
     ## Process offline anomaly models
     anom_save_dir = config_table['save-root']
-    confirm_dir_or_consult(anom_save_dir)
+    confirm_dir_or_consult(Path(anom_save_dir))
     # anom_save_dir = Path(os.curdir, 'figures', '2025-04-07', 'signal-1-filtered')
     anom_save_name = Path('isolation_forest_fig')
     data_size = len(data)
@@ -469,13 +469,13 @@ def run_from_config():
     unsafe = data[half_point:]
     anom_results = run_offline_anomaly_models(time, safe, unsafe, data, (AnomalyType.ISO_FOREST,))
     plot_detection_anomaly_models(time, data, anom_results, anom_save_dir, anom_save_name)
-    # todo if save path does not exist, should have option to (create path, don't save, abort)
     ## Write data frame for LaTeX
     save_root = config_table['save-root']
     metric_table_config = config_table['metric-table']
     metric_root = metric_table_config['save-root']
     save_name = metric_table_config['save-name']
     save_folder = Path(save_root, metric_root)
+    confirm_dir_or_consult(save_folder)
     tex_table = format_frame_for_latex(df)
     # save_folder = Path(os.curdir, 'figures', '2025-02-11', 'tables')
     # save_name = config_table['metric-table']['save-name']
