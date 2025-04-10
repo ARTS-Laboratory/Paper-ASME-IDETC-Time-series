@@ -20,7 +20,8 @@ except ModuleNotFoundError:
 except ImportError:
     warnings.warn('Expected Cython imports to be available.')
 try:
-    from tda_project_rusty import run_bocpd, run_expect_max
+    import tda_project_rusty
+    from tda_project_rusty import run_bocpd, run_bocpd_inplace, DistParams, BetaCache, SparseProbs
 except ModuleNotFoundError:
     warnings.warn('Rust module not included in environment.')
 except ImportError:
@@ -71,6 +72,35 @@ def bayesian_online_changepoint_detection_deque_generator_v2(data, mu, kappa, al
     print(predictions.shape)
     for prediction in predictions:
         yield prediction <= 0.05
+
+
+def bocpd_rust_hybrid(data, mu, kappa, alpha, beta, lamb):
+    """ Use Bayesian Online Change Point Detection to detect change points in data."""
+    threshold = 1e-8
+    my_data = np.asarray(data)
+    run_length = 1  # Iterations since last changepoint
+    maxes = deque((0,), maxlen=2)
+    sparse_probs = SparseProbs()
+    sparse_probs.new_entry(0, 1.0)
+    parameters: DistParams = DistParams(alpha, beta, mu, kappa)
+    beta_cache = BetaCache(0.5)
+    for idx, event in enumerate(my_data):
+        tda_project_rusty.calc_probabilities_cached(event, lamb, parameters, sparse_probs, beta_cache)
+        # tda_project_rusty.calc_probabilities(event, lamb, parameters, sparse_probs)
+        new_size = tda_project_rusty.truncate_vectors(threshold, parameters, sparse_probs)
+        max_idx, _ = sparse_probs.max_prob()
+        maxes.append(max_idx)
+        if maxes[-1] < maxes[0]:
+            sparse_probs.reset()
+            parameters.reset(alpha, beta, mu, kappa)
+        else:
+            parameters.update_no_change(event, alpha, beta, mu, kappa)
+        # Calculate probability of change point
+        # attack_probs = parameters.priors(event)
+        attack_probs = parameters.priors_cached(event, beta_cache)
+        val_prob = tda_project_rusty.get_change_prob(attack_probs, sparse_probs)
+        is_attack = val_prob <= 0.05
+        yield is_attack
 
 
 @profile
@@ -308,9 +338,14 @@ def get_bocpd_v5_from_generator(time, data, mu, kappa, alpha, beta, lamb,
     begin = 0
     # try to use rust version, if it's not in the wheel fall back to python implementation
     try:
-        data_list = data.tolist()
-        out = run_bocpd(data_list, mu, kappa, alpha, beta, lamb)
-        bocpd_model_gen = (prob <= 0.05 for prob in out)
+        print('Temp')
+        bocpd_model_gen = bocpd_rust_hybrid(data, mu, kappa, alpha, beta, lamb)
+        print('Start rust bocpd algorithm.')
+        # data_list = data.tolist()
+        # out = np.empty_like(data)
+        # run_bocpd_inplace(data, mu, kappa, alpha, beta, lamb, out)
+        # out = run_bocpd(data, mu, kappa, alpha, beta, lamb)
+        # bocpd_model_gen = (prob <= 0.05 for prob in out)
         shocks, non_shocks = detection_to_intervals_for_generator_v1(
             time, begin, bocpd_model_gen)
     except NameError:
@@ -323,15 +358,6 @@ def get_bocpd_v5_from_generator(time, data, mu, kappa, alpha, beta, lamb,
         else:
             shocks, non_shocks = detection_to_intervals_for_generator_v1(
                 time, begin, bocpd_model_gen)
-    #     if with_progress:
-    #         bocpd_model_gen = tqdm(
-    #             bayesian_online_changepoint_detection_v6_generator(
-    #                 my_data, mu, kappa, alpha, beta, lamb), total=len(data))
-    #     else:
-    #         bocpd_model_gen = bayesian_online_changepoint_detection_v6_generator(
-    #             my_data, mu, kappa, alpha, beta, lamb)
-    # shocks, non_shocks = detection_to_intervals_for_generator_v1(
-    #     time, begin, bocpd_model_gen)
     return shocks, non_shocks
 
 
