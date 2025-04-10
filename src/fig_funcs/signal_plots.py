@@ -32,6 +32,13 @@ def plot_signal_for_paper(time, data, ms=False, fig_size=None):
     plot_signal(ax, time, data, ms=ms)
     return fig
 
+def plot_signal_for_flowchart(time, data, ms=False, fig_size=None):
+    """ Make time-series signal plot figure for detection process flowchart."""
+    fig_size = fig_size if fig_size is not None else (6.45, 1.35)
+    fig, ax = plt.subplots(figsize=(fig_size), layout='constrained')
+    plot_signal(ax, time - time[0], data, ms=ms)
+    return fig
+
 
 def plot_signal_fft(time, data):
     dft = rfft(data)
