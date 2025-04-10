@@ -178,16 +178,18 @@ def make_ground_truth(time, data):
     shocked = False
     print(f'number of breakpoints: {len(bkps)}')
     for bkp in bkps[:-1]:
+        entry = (begin, bkp + 1)
         if shocked:
-            shocks.append((begin, bkp + 1))
+            shocks.append(entry)
         else:
-            nonshocks.append((begin, bkp + 1))
+            nonshocks.append(entry)
         shocked = not shocked
         begin = bkp
+    entry = (begin, bkps[-1])
     if shocked:
-        shocks.append((begin, bkps[-1]))
+        shocks.append(entry)
     else:
-        nonshocks.append((begin, bkps[-1]))
+        nonshocks.append(entry)
     return shocks, nonshocks
 
     # binary_segmentation.plot_breaks(data, bkps)
