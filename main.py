@@ -65,27 +65,35 @@ def plot_offline_detections(time, data, save_root=None):
     plt.close(ground_truth_fig)
 
 
-def write_metric_table(time, ground, predictions_list, algorithm_names, signal_names):
+def write_metric_table(
+        time, ground, predictions_list, algorithm_names, signal_names):
     """ """
     ids = (('signal_id', signal_names), ('algorithm', algorithm_names))
     metric_dict = dict(ids)
     # Calculate scores
-    metric_names = ('accuracy', 'precision', 'recall', 'f1 score', 'detection delay')
+    metric_names = (
+        'accuracy', 'precision', 'recall', 'f1 score', 'detection delay')
     metric_funcs = (
         sklearn.metrics.accuracy_score, sklearn.metrics.precision_score,
         sklearn.metrics.recall_score, sklearn.metrics.f1_score)
     metrics = dict()
     for metric_name, metric_func in zip(metric_names, metric_funcs):
-        scores = [metric_func(ground, predictions) for predictions in predictions_list]
+        scores = [
+            metric_func(ground, predictions)
+            for predictions in predictions_list]
         metrics[metric_name] = scores
-    earliest_correct = [get_earliest_correct(time, ground, predictions) for predictions in predictions_list]
-    delay = [get_detect_delay(time, ground, earliest) for earliest in earliest_correct]
+    earliest_correct = [
+        get_earliest_correct(time, ground, predictions)
+        for predictions in predictions_list]
+    delay = [
+        get_detect_delay(time, ground, earliest)
+        for earliest in earliest_correct]
     metrics['earliest correct'] = earliest_correct
     metrics['delay'] = delay
     # Combine scores and rest of table
     metric_dict.update(metrics)
     df = pd.DataFrame(metric_dict)
-    print(df)
+    # print(df)
     return df
 
 
