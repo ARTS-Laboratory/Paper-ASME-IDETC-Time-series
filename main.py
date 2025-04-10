@@ -1,7 +1,5 @@
 import argparse
-import math
 import os
-from dataclasses import asdict
 
 import scipy
 import cProfile
@@ -17,7 +15,7 @@ from more_itertools import sliding_window
 import utils
 
 from config_parse import read_model_config
-from fig_funcs.detection_plots import plot_shock, interval_histogram, raw_histogram  # , convert_intervals_to_time_memoized
+from fig_funcs.detection_plots import plot_shock  # , convert_intervals_to_time_memoized
 from fig_funcs.histograms import plot_metric_histogram
 from fig_funcs.radar_plots import plot_metric_scores_for_paper
 from model_runners.offline_anomaly_models import run_offline_anomaly_models, AnomalyType, plot_detection_anomaly_models
@@ -98,7 +96,8 @@ def write_metric_table(
 
 def get_earliest_correct(time, ground, predictions):
     """ """
-    true_positive_indices = np.logical_and(ground.astype(bool), predictions.astype(bool))
+    true_positive_indices = np.logical_and(
+        ground.astype(bool), predictions.astype(bool))
     if true_positive_indices.any():
         earliest_correct = time[true_positive_indices][0]
     else:
