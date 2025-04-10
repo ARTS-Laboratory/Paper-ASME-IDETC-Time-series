@@ -1,6 +1,6 @@
-./figures/
+./figures/*
 # Ignore configs
-./configs/
+./configs/*
 # Allow default config
 !./configs/example-config.toml
 !./configs/main-config.toml
