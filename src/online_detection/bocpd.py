@@ -346,18 +346,19 @@ def get_bocpd_v5_from_generator(time, data, mu, kappa, alpha, beta, lamb,
         # run_bocpd_inplace(data, mu, kappa, alpha, beta, lamb, out)
         # out = run_bocpd(data, mu, kappa, alpha, beta, lamb)
         # bocpd_model_gen = (prob <= 0.05 for prob in out)
-        shocks, non_shocks = detection_to_intervals_for_generator_v1(
-            time, begin, bocpd_model_gen)
+
+        # shocks, non_shocks = detection_to_intervals_for_generator_v1(
+        #     time, begin, bocpd_model_gen)
     except NameError:
         print('Exception occurred, reverting to python')
         bocpd_model_gen = bayesian_online_changepoint_detection_v6_generator(
                 my_data, mu, kappa, alpha, beta, lamb)
-        if with_progress:
-            shocks, non_shocks = detection_to_intervals_for_generator_v1_with_progress(
-                time, begin, bocpd_model_gen, len(data))
-        else:
-            shocks, non_shocks = detection_to_intervals_for_generator_v1(
-                time, begin, bocpd_model_gen)
+    if with_progress:
+        shocks, non_shocks = detection_to_intervals_for_generator_v1_with_progress(
+            time, begin, bocpd_model_gen, len(data))
+    else:
+        shocks, non_shocks = detection_to_intervals_for_generator_v1(
+            time, begin, bocpd_model_gen)
     return shocks, non_shocks
 
 
