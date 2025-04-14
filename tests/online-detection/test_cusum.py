@@ -39,6 +39,8 @@ def test_profile_cusum_alg():
     print(tracemalloc.get_traced_memory())
     curr, peak = tracemalloc.get_traced_memory()
     print(f'After calling next once current memory usage: {curr / kib_scalar:.4} {kib_unit}, peak of {peak / kib_scalar:.4} {kib_unit}')
-    out = [item for item in model_gen]
+    for item in model_gen:
+        continue
+    # out = [item for item in model_gen]
     curr, peak = tracemalloc.get_traced_memory()
     print(f'After data collection current memory usage: {curr / kib_scalar:.4} {kib_unit}, peak of {peak / kib_scalar:.4} {kib_unit}')
