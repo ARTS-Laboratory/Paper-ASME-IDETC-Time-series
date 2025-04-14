@@ -505,7 +505,7 @@ def main():
     set_rc_params()
     file_path = './data/Dataset-7-forced-vibration-and-shock/data/dataset-A/inputData1_raw.txt'
     save_dir = Path('figures', '2024-09-18', 'signal-2')
-    my_data = get_data(file_path)
+    my_data = load_signals(file_path)
     time, data = my_data[:, 0], my_data[:, 1]
     # make_signal_plots(time, data, save_root=save_dir)
     # plot_offline_detections(time, data, save_dir)
