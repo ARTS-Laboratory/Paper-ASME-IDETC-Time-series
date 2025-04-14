@@ -222,6 +222,7 @@ def run_online_models(
     signal_idx = 0
     # Start iteration
     for model in models:
+        print(f'Running model "{model.name}"')
         signal_idx += 1
         match model.type:
             case ModelType.BOCPD:

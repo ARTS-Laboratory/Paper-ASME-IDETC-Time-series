@@ -352,6 +352,7 @@ def evaluate_online_models(time, model_results, ground):
     algorithm_names = list()
     signal_names = list()
     for idx, (model, shocks, non_shocks) in enumerate(model_results, start=1):
+        print(f'Evaluating model "{model.name}"')
         pred = intervals_to_dense_arr(time, shocks, non_shocks)
         print_scores(time, ground, pred)
         predictions.append(pred)
