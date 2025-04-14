@@ -14,6 +14,10 @@ def get_benchmark_vars():
     data = rng.normal(mean, std_dev, size=data_size)
     return data, mean, std_dev, h, alpha
 
+def test_benchmark_cusum_alg(benchmark):
+    data, mean, std_dev, h, alpha = get_benchmark_vars()
+    model_gen = cusum_alg_generator(data, mean, std_dev, h, alpha)
+    benchmark(lambda: [item for item in model_gen])
 
 def test_profile_cusum_alg():
     """ """

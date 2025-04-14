@@ -70,6 +70,15 @@ def test_benchmark_bocpd_inplace_from_rust(benchmark):
     except NameError:
         pytest.skip("Rust version not available.")
 
+def test_benchmark_bocpd_rust_hybrid(benchmark):
+    points, alpha, beta, mu, kappa, lamb = get_benchmark_vars()
+    try:
+        bocpd_model_gen = bocpd.bocpd_rust_hybrid(
+            points, mu, kappa, alpha, beta, lamb)
+        benchmark(lambda: [item for item in bocpd_model_gen])
+    except NameError:
+        pytest.skip("Rust version not available.")
+
 def test_benchmark_bocpd_from_python(benchmark):
     points, alpha, beta, mu, kappa, lamb = get_benchmark_vars()
     bocpd_model_gen = bayesian_online_changepoint_detection_v6_generator(

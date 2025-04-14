@@ -71,6 +71,14 @@ def get_benchmark_vars():
         'safe_var': safe_var, 'unsafe_var': unsafe_var, 'pi': pi}
     return param_dict, safe, unsafe, my_unknowns, epochs
 
+
+def test_benchmark_em_model_from_python(benchmark):
+    params, safe, unsafe, my_unknowns, epochs = get_benchmark_vars()
+    model_gen = expectation_maximization_generator(
+        safe, unsafe, my_unknowns, params['safe_mean'], params['unsafe_mean'],
+        params['safe_var'], params['unsafe_var'], params['pi'], epochs)
+    benchmark(lambda: [item for item in model_gen])
+
 def test_profile_run_em_from_python():
     """ Test memory utilization of expectation maximization with tracemalloc."""
     params, safe, unsafe, my_unknowns, epochs = get_benchmark_vars()

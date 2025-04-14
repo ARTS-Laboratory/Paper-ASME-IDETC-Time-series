@@ -15,6 +15,12 @@ def get_benchmark_vars():
     data = rng.normal(mean, std_dev, size=data_size)
     return data, window_size, c, c_ratio
 
+def test_benchmark_grey_model_from_python(benchmark):
+    data, window_size, c, c_ratio = get_benchmark_vars()
+    model_gen = grey_model_generator(
+        data, window_size, c=c, c_ratio=c_ratio)
+    benchmark(lambda: [item for item in model_gen])
+
 def test_profile_run_grey_model():
     data, window_size, c, c_ratio = get_benchmark_vars()
     kib_scalar = 1_024
