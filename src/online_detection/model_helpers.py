@@ -36,10 +36,11 @@ def detection_to_intervals_for_generator_v1_with_progress(
     """ Convert detections from generator to time intervals."""
     try:
         my_generator = tqdm(model_generator, total=iter_len)
-        return detection_to_intervals_for_generator_v1(time_vec, begin, my_generator, start_offset)
+        # return detection_to_intervals_for_generator_v1(time_vec, begin, my_generator, start_offset)
     except NameError:
         warnings.warn('tqdm module not included in environment.\ndefaulting to run without progress.')
-        return detection_to_intervals_for_generator_v1(time_vec, begin, model_generator, start_offset)
+        my_generator = model_generator
+    return detection_to_intervals_for_generator_v1(time_vec, begin, my_generator, start_offset)
 
 
 def detection_to_intervals_for_generator_v2(time_vec, begin, model_generator):
