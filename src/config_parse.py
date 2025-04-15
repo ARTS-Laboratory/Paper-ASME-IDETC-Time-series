@@ -32,31 +32,35 @@ def read_model_config(config_file):
         match model_type:
             case 'bocpd':
                 hyperparams = Hyperparameters.BOCPDHyperparams(
-                        alpha=hp['alpha'], beta=hp['beta'], mu=hp['mu'],
-                        kappa=hp['kappa'], lamb=hp['lambda'])
+                    alpha=hp['alpha'].unwrap(), beta=hp['beta'].unwrap(),
+                    mu=hp['mu'].unwrap(), kappa=hp['kappa'].unwrap(),
+                    lamb=hp['lambda'].unwrap())
             case 'expectation maximization':
                 hyperparams = Hyperparameters.EMHyperparams(
-                        normal_data_size=hp['normal-data-size'],
-                        abnormal_data_size=hp['abnormal-data-size'],
-                        normal_mean=hp['normal-mean'],
-                        abnormal_mean=hp['abnormal-mean'],
-                        normal_var=hp['normal-variance'],
-                        abnormal_var=hp['abnormal-variance'],
-                        pi=hp['pi'], epochs=hp['epochs'])
+                        normal_data_size=hp['normal-data-size'].unwrap(),
+                        abnormal_data_size=hp['abnormal-data-size'].unwrap(),
+                        normal_mean=hp['normal-mean'].unwrap(),
+                        abnormal_mean=hp['abnormal-mean'].unwrap(),
+                        normal_var=hp['normal-variance'].unwrap(),
+                        abnormal_var=hp['abnormal-variance'].unwrap(),
+                        pi=hp['pi'].unwrap(), epochs=hp['epochs'].unwrap())
             case 'cusum':
                 hyperparams = Hyperparameters.CUSUMHyperparams(
-                        mean=hp['mean'], std_dev=hp['standard-deviation'], h=hp['h'],
-                        alpha=hp['alpha'])
+                    mean=hp['mean'].unwrap(),
+                    std_dev=hp['standard-deviation'].unwrap(),
+                    h=hp['h'].unwrap(),
+                    alpha=hp['alpha'].unwrap())
             case 'grey':
                 hyperparams = Hyperparameters.GreyHyperparams(
-                        window_size=hp['window-size'],
-                        critical_value=hp['critical-value'],
-                        critical_ratio_value=hp['critical-ratio-value'],
-                        alpha=hp['alpha'])
+                    window_size=hp['window-size'].unwrap(),
+                    critical_value=hp['critical-value'].unwrap(),
+                    critical_ratio_value=hp['critical-ratio-value'].unwrap(),
+                    alpha=hp['alpha'].unwrap())
             case 'nonparametric':
                 hyperparams = Hyperparameters.NonparametricHyperparams(
-                        window_size=hp['window-size'],
-                        critical_value=hp['critical-value'], alpha=hp['alpha']
+                    window_size=hp['window-size'].unwrap(),
+                    critical_value=hp['critical-value'].unwrap(),
+                    alpha=hp['alpha'].unwrap()
                     )
             case _:
                 raise NotImplementedError
