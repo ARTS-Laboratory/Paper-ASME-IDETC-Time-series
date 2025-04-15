@@ -2,7 +2,8 @@ import tracemalloc
 
 import numpy as np
 
-from online_detection.cusum import cusum_alg_generator
+from online_detection.cusum import cusum_alg_generator, get_cusum_from_generator
+
 
 def get_benchmark_vars():
     mean = 20.0
@@ -18,6 +19,15 @@ def test_benchmark_cusum_alg(benchmark):
     data, mean, std_dev, h, alpha = get_benchmark_vars()
     model_gen = cusum_alg_generator(data, mean, std_dev, h, alpha)
     benchmark(lambda: [item for item in model_gen])
+
+
+def test_benchmark_get_cusum_generator_alg_v0(benchmark):
+    data, mean, std_dev, h, alpha = get_benchmark_vars()
+    time = np.arange(len(data))
+    version = 'v0'
+    benchmark(
+        get_cusum_from_generator, time, data, mean, std_dev, h, alpha,
+        with_progress=True, version=version)
 
 def test_profile_cusum_alg():
     """ """
