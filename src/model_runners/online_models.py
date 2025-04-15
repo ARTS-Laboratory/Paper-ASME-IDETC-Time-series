@@ -15,7 +15,6 @@ from fig_funcs.detection_plots import plot_shock
 # from main import make_ground_truth, print_scores, write_metric_table
 from online_detection import bocpd, cusum, expect_Max, grey_systems_model, nonparametric_model
 from online_detection.bocpd import get_bocpd_v5_from_generator
-from online_detection.cusum import get_cusum_revised, cusum_alg, cusum_alg_v1
 from online_detection.expect_Max import get_expectation_maximization_model_from_generator
 from online_detection.grey_systems_model import get_grey_model_from_generator, get_grey_model
 from online_detection.nonparametric_model import get_nonparametric_model_from_generator
@@ -243,8 +242,13 @@ def run_online_models(
                     hp.abnormal_mean, hp.normal_var, hp.abnormal_var, hp.pi,
                     hp.epochs, with_progress=model.with_progress)
             case ModelType.CUSUM:
-                shocks, non_shocks = cusum.cusum_alg(
-                    time, data, **asdict(model.hyperparameters))
+                # todo version needs to be incorporated into model object
+                version = 'v0'
+                hp: Hyperparameters.CUSUMHyperparams = model.hyperparameters
+                shocks, non_shocks = cusum.get_cusum_from_generator(
+                    time, data, hp.mean, hp.std_dev, hp.h, hp.alpha,
+                    version=version, with_progress=model.with_progress
+                )
             case ModelType.GREY_MODEL:
                 hp: Hyperparameters.GreyHyperparams = model.hyperparameters
                 shocks, non_shocks = get_grey_model_from_generator(
