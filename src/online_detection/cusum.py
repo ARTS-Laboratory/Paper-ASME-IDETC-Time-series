@@ -141,7 +141,7 @@ def cusum_alg(
     return shocks, non_shocks
 
 
-def cusum_alg_generator(data, mean, std_dev, h, alpha):
+def cusum_alg_generator(data: np.ndarray, mean: float, std_dev: float, h: float, alpha: float):
     """ """
     cp, cn, d, mu = [0], [0], [0], [data[0]]
     # First point is always True
