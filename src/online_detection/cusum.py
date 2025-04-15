@@ -4,11 +4,19 @@ Created on Thu Dec 21 12:24:29 2023
 
 @author: localuser
 """
+from enum import Enum
+
 import numpy as np
 
 from fig_funcs.detection_plots import plot_shock
+from online_detection.model_helpers import (
+    detection_to_intervals_for_generator_v1_with_progress,
+    detection_to_intervals_for_generator_v1)
 from utils.read_data import read_data_from_file
 
+class CusumAlgVersion(Enum):
+    ALG_V0 = 'v0'
+    ALG_V1 = 'v1'
 
 def cusum(
         time, data, mean, sigma, alpha, beta, shock_intervals=None,
@@ -252,9 +260,32 @@ def get_cusum_revised(
     return shocks, non_shocks
 
 
-def get_cusum_from_generator(time, data, mean, std_dev, h, alpha):
-    """ """
-    pass
+def get_cusum_from_generator(time: np.ndarray, data: np.ndarray, mean: float, std_dev: float, h: float, alpha: float, version=None, with_progress=False):
+    """ Return output of cusum algorithm using generator."""
+    begin = 0
+    default_alg = CusumAlgVersion.ALG_V0
+    if version is None:
+        alg_version = default_alg
+    else:
+        try:
+            alg_version = CusumAlgVersion(version)
+        except ValueError:
+            print(f'Algorithm version {version} not a valid option for cusum. Defaulting to {default_alg}')
+            alg_version = default_alg
+    match alg_version:
+        case CusumAlgVersion.ALG_V0:
+            model_gen = cusum_alg_generator(data, mean, std_dev, h, alpha)
+        case CusumAlgVersion.ALG_V1:
+            model_gen = cusum_alg_v1_generator(data, mean, std_dev, h, alpha)
+        case _:
+            raise ValueError(f'Invalid cusum algorithm version: {version}')
+    if with_progress:
+        shocks, non_shocks = detection_to_intervals_for_generator_v1_with_progress(
+            time, begin, model_gen, len(data))
+    else:
+        shocks, non_shocks = detection_to_intervals_for_generator_v1(
+            time, begin, model_gen)
+    return shocks, non_shocks
 
 
 def get_plot_cusum(file_path):
