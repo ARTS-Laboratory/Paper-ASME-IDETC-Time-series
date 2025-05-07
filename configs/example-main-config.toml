@@ -1,0 +1,72 @@
+title = "Example Config 1"
+version = "1"
+num-samples = 500000
+file-path = "../data/example-data/example-1.npy"
+save-root = "./example-figures/example-1/" # may default to current directory
+
+[metric-table]
+# The save root will be relative to above
+# May add functionality for when it's an absolute path (should work automatically though)
+#save-root = "./figures/tables/2025-01-27"
+#save-root = "./figures/2025-03-24/tables"
+save-root = "tables"
+save-name = "example-table-1.tex"
+
+[[models]]
+# no prior survivorship
+type = "bocpd"
+name = "naive bocpd"
+show-progress = true
+# Not implemented
+save-name = "bocpd_fig"
+
+[models.hyperparameters]
+alpha = 1.0 # 1/2 * kappa
+beta = 1.0 # alpha * sample variance
+mu = 0.0 #  sample mean
+kappa =  2.0
+lambda = 2.0
+
+
+[[models]]
+type = "expectation maximization"
+name = "expectation maximization"
+show-progress = true
+save-name = "expecatation_maximization_fig"
+
+[models.hyperparameters]
+normal-mean = 0.0
+normal-variance = 100.0
+abnormal-mean = 60.0
+abnormal-variance = 100.0
+normal-data-size = 70
+abnormal-data-size = 30
+pi = 0.7 # if excluded, read as None
+epochs = 100
+
+
+[[models]]
+type = "cusum"
+name = "cusum"
+show-progress = true
+save-name = "cusum_fig"
+
+[models.hyperparameters]
+mean = 0.0
+standard-deviation = 10.0
+h = 5
+alpha = 0.95
+
+
+[[models]]
+type = "grey"
+name = "grey"
+show-progress = true
+save-name = "grey_fig"
+#sample-data = ""
+
+[models.hyperparameters]
+window-size = 4 # 100
+critical-value = 1.5
+critical-ratio-value = 1.5 # 1.5
+alpha = 0.5 # weighted average
